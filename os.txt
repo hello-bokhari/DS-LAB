@@ -294,3 +294,204 @@ Q3 Tips:
 ================================================================
                         GOOD LUCK!
 ================================================================
+
+#!/bin/bash
+
+# 1. Take directory path as input
+read -p "Enter directory path: " dir
+
+# Check if directory exists
+if [ ! -d "$dir" ]; then
+  echo "Directory does not exist!"
+  exit 1
+fi
+
+# Log file
+logfile="deleted_files.log"
+
+# Clear previous log (optional)
+> $logfile
+
+# 2 & 3. Find and delete .tmp and .log files older than 7 days, log names
+count=0
+
+for file in $(find "$dir" -type f \( -name "*.tmp" -o -name "*.log" \) -mtime +7)
+do
+  echo "Deleting: $file"
+  echo "$file" >> $logfile
+  rm "$file"
+  ((count++))
+done
+
+# 4. Print total number of files deleted
+echo "Total files deleted: $count"
+
+#!/bin/bash
+
+read -p "Enter directory: " dir
+
+mkdir -p backup
+
+cp "$dir"/*.txt backup/
+
+echo "Backup completed!"
+
+# Compiler
+CC = gcc
+
+# Targets
+all: attendance_app marks_app
+
+# Linking executables
+attendance_app: attendance.o
+	$(CC) attendance.o -o attendance_app
+
+marks_app: marks.o
+	$(CC) marks.o -o marks_app
+
+# 🔹 Pattern rule (IMPORTANT ⚡)
+%.o: %.c
+	$(CC) -c $< -o $@
+
+# Clean rule
+clean:
+	rm -f *.o attendance_app marks_app
+
+make
+make clean
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <unistd.h>
+
+struct stock {
+    int price;
+    int flag; // 0 = write, 1 = read
+};
+
+int main() {
+    key_t key = 1234;
+    int shmid = shmget(key, sizeof(struct stock), 0666 | IPC_CREAT);
+    struct stock *data = (struct stock *)shmat(shmid, NULL, 0);
+
+    data->flag = 0;
+
+    int prices[] = {120, 95, 80, 150, 60};
+
+    for (int i = 0; i < 5; i++) {
+        while (data->flag == 1); // wait until trader reads
+
+        data->price = prices[i];
+        printf("Producer: Updated price = %d\n", data->price);
+
+        data->flag = 1; // data ready for trader
+        sleep(1);
+    }
+
+    shmdt(data);
+    return 0;
+}
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <unistd.h>
+
+struct stock {
+    int price;
+    int flag;
+};
+
+int main() {
+    key_t key = 1234;
+    int shmid = shmget(key, sizeof(struct stock), 0666 | IPC_CREAT);
+    struct stock *data = (struct stock *)shmat(shmid, NULL, 0);
+
+    for (int i = 0; i < 5; i++) {
+        while (data->flag == 0); // wait for producer
+
+        int price = data->price;
+
+        if (price < 100)
+            printf("Trader: Price = %d → BUY\n", price);
+        else
+            printf("Trader: Price = %d → HOLD\n", price);
+
+        data->flag = 0; // allow producer to write again
+    }
+
+    shmdt(data);
+    return 0;
+}
+
+gcc producer.c -o producer
+gcc trader.c -o trader
+Terminal 1:
+./producer
+Terminal 2:
+./trader
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+
+struct product {
+    int quantity;
+    float cost_per_unit;
+    int shipped;
+    int remaining;
+};
+
+int main() {
+    int pipe1[2], pipe2[2];
+    pipe(pipe1);
+    pipe(pipe2);
+
+    pid_t pid = fork();
+
+    if (pid > 0) {
+        // 🔹 Parent Process
+        struct product p;
+
+        p.quantity = 100;        // initial quantity
+        p.cost_per_unit = 5.0;   // cost per unit
+
+        // Send data to child
+        write(pipe1[1], &p, sizeof(p));
+
+        // Wait and read updated data
+        read(pipe2[0], &p, sizeof(p));
+
+        // Calculations
+        float storage_cost = p.cost_per_unit * p.remaining;
+        float shipment_percentage = ((float)p.shipped / p.quantity) * 100;
+
+        printf("Remaining Stock: %d\n", p.remaining);
+        printf("Storage Cost: %.2f\n", storage_cost);
+        printf("Shipment Percentage: %.2f%%\n", shipment_percentage);
+    }
+    else {
+        // 🔹 Child Process
+        struct product p;
+
+        // Read data from parent
+        read(pipe1[0], &p, sizeof(p));
+
+        // Process data
+        p.shipped = 40; // assume shipped quantity
+        p.remaining = p.quantity - p.shipped;
+
+        // Send back to parent
+        write(pipe2[1], &p, sizeof(p));
+    }
+
+    return 0;
+}
+
+
+gcc warehouse.c -o warehouse
+./warehouse
