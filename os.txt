@@ -1,0 +1,296 @@
+================================================================
+         OS LAB EXAM - COMMANDS CHEAT SHEET
+================================================================
+Q1 = Linux Commands / Shell Scripting (10 marks)
+Q2 = System Calls / IPC (10 marks)
+Q3 = Makefile (5 marks)
+================================================================
+
+
+----------------------------------------------------------------
+ BASIC LINUX COMMANDS                                     [Q1]
+----------------------------------------------------------------
+
+ls - List directory contents
+  ls -la              # long format, show hidden files
+  ls -lh /var         # human-readable sizes
+
+chmod - Change file permissions
+  chmod 755 script.sh     # rwxr-xr-x
+  chmod +x script.sh      # add execute permission
+
+grep - Search text using patterns
+  grep -n "error" log.txt       # show line numbers
+  grep -r "main" ./src/         # recursive search
+
+find - Search for files in directory tree
+  find . -name "*.c" -type f    # find all .c files
+  find /tmp -mtime -1           # files modified < 1 day ago
+
+wc - Word, line, character count
+  wc -l file.txt      # count lines
+  wc -w file.txt      # count words
+
+sort / uniq - Sort lines and remove duplicates
+  sort names.txt | uniq         # sort then deduplicate
+  sort -n numbers.txt           # numeric sort
+
+awk - Text processing by columns/fields
+  awk '{print $1}' file.txt         # print 1st column
+  awk -F: '{print $1}' /etc/passwd  # use : as delimiter
+
+sed - Stream editor — find and replace
+  sed 's/hello/world/g' file.txt    # replace all occurrences
+  sed -n '2,5p' file.txt            # print lines 2–5
+
+Pipes and Redirection  |  &  >  >>
+  ls -l | grep ".sh"        # pipe output to grep
+  echo "log" >> file.txt    # append to file
+  cmd 2>&1 | tee out.txt    # redirect stderr + stdout
+
+ps / kill - Process management
+  ps aux | grep myprogram   # find a process
+  kill -9 1234              # force kill PID 1234
+
+
+----------------------------------------------------------------
+ SHELL SCRIPTING (BASH)                                   [Q1]
+----------------------------------------------------------------
+
+Shebang (always start scripts with this):
+  #!/bin/bash
+
+Variables
+  name="Alice"
+  echo "Hello $name"
+  readonly PI=3.14      # constant
+
+if / elif / else
+  if [ $x -gt 10 ]; then
+    echo "big"
+  elif [ $x -eq 10 ]; then
+    echo "equal"
+  else
+    echo "small"
+  fi
+
+for loop
+  for i in {1..5}; do
+    echo "Count: $i"
+  done
+
+  for f in *.txt; do echo "$f"; done
+
+while loop
+  while [ $i -le 5 ]; do
+    echo $i
+    ((i++))
+  done
+
+Functions
+  greet() {
+    echo "Hello, $1"    # $1 = first argument
+  }
+  greet "Bob"           # call the function
+
+Special Variables
+  $?   # exit status of last command
+  $#   # number of arguments passed
+  $@   # all arguments
+  $1   # first argument to script
+
+read - User input
+  read -p "Enter name: " name
+  echo "You entered: $name"
+
+Arithmetic
+  result=$((5 + 3))       # arithmetic expansion
+  ((count++))             # increment variable
+  expr 10 \* 5            # using expr command
+
+String / File Tests
+  [ -f file.txt ]     # file exists
+  [ -d /tmp ]         # is a directory
+  [ -z "$var" ]       # string is empty
+  [ "$a" == "$b" ]    # strings are equal
+
+Numeric Comparisons
+  -eq   equal
+  -ne   not equal
+  -gt   greater than
+  -lt   less than
+  -ge   greater than or equal
+  -le   less than or equal
+
+
+----------------------------------------------------------------
+ SYSTEM CALLS (C)                                         [Q2]
+----------------------------------------------------------------
+
+Headers to include:
+  #include <unistd.h>
+  #include <sys/types.h>
+  #include <sys/wait.h>
+  #include <fcntl.h>
+  #include <signal.h>
+
+fork() - Create a child process
+  pid_t pid = fork();
+  if (pid == 0)        // child process
+    printf("Child\n");
+  else if (pid > 0)    // parent process
+    wait(NULL);
+
+exec() - Replace process image with a program
+  execl("/bin/ls", "ls", "-l", NULL);
+  execlp("ls", "ls", "-l", NULL);  // searches PATH
+
+wait() / waitpid() - Wait for child to finish
+  wait(NULL);                    // wait for any child
+  waitpid(pid, &status, 0);      // wait for specific child
+
+open() / read() / write() / close() - File system calls
+  int fd = open("file.txt", O_RDWR | O_CREAT, 0644);
+  read(fd, buffer, sizeof(buffer));
+  write(fd, "hello", 5);
+  close(fd);
+
+  Flags: O_RDONLY  O_WRONLY  O_RDWR  O_CREAT  O_APPEND
+
+getpid() / getppid() - Get process IDs
+  printf("My PID:     %d\n", getpid());
+  printf("Parent PID: %d\n", getppid());
+
+signal() / kill() - Signals
+  signal(SIGINT, handler);     // catch Ctrl+C
+  kill(pid, SIGTERM);          // send signal to process
+
+
+----------------------------------------------------------------
+ IPC — INTER-PROCESS COMMUNICATION                        [Q2]
+----------------------------------------------------------------
+
+--- Anonymous Pipe ---
+Headers: #include <unistd.h>
+
+  int fd[2];
+  pipe(fd);              // fd[0]=read end, fd[1]=write end
+  write(fd[1], "hi", 3);
+  read(fd[0], buf, 3);
+
+--- Named Pipe (FIFO) ---
+Headers: #include <sys/stat.h>
+
+  mkfifo("/tmp/myfifo", 0666);
+  // Writer:  open("/tmp/myfifo", O_WRONLY)
+  // Reader:  open("/tmp/myfifo", O_RDONLY)
+
+--- Shared Memory ---
+Headers: #include <sys/ipc.h>  #include <sys/shm.h>
+
+  int shmid = shmget(IPC_PRIVATE, 1024, IPC_CREAT|0666);
+  char *ptr = (char*) shmat(shmid, NULL, 0);
+  strcpy(ptr, "shared data");
+  shmdt(ptr);
+  shmctl(shmid, IPC_RMID, NULL);   // remove shared memory
+
+--- Message Queue ---
+Headers: #include <sys/ipc.h>  #include <sys/msg.h>
+
+  struct msgbuf {
+    long mtype;
+    char text[100];
+  } msg;
+
+  int msqid = msgget(IPC_PRIVATE, IPC_CREAT|0666);
+  msgsnd(msqid, &msg, sizeof(msg.text), 0);
+  msgrcv(msqid, &msg, sizeof(msg.text), 1, 0);
+  msgctl(msqid, IPC_RMID, NULL);   // remove queue
+
+--- Semaphores ---
+Headers: #include <sys/ipc.h>  #include <sys/sem.h>
+
+  int semid = semget(IPC_PRIVATE, 1, IPC_CREAT|0666);
+  // semop with sem_op = -1  -->  wait / P operation
+  // semop with sem_op = +1  -->  signal / V operation
+  semctl(semid, 0, IPC_RMID);     // remove semaphore
+
+
+----------------------------------------------------------------
+ MAKEFILE                                                  [Q3]
+----------------------------------------------------------------
+
+CRITICAL: Recipe lines MUST use a TAB, not spaces!
+
+Basic rule syntax:
+  target: dependencies
+  [TAB] recipe_command
+
+  program: main.o utils.o
+  [TAB] gcc -o program main.o utils.o
+
+Variables
+  CC     = gcc
+  CFLAGS = -Wall -g
+  OBJS   = main.o utils.o
+
+  program: $(OBJS)
+  [TAB] $(CC) $(CFLAGS) -o program $(OBJS)
+
+Automatic variables
+  $@    name of the target
+  $<    first dependency only
+  $^    all dependencies
+
+Pattern rule (compile all .c to .o)
+  %.o: %.c
+  [TAB] $(CC) $(CFLAGS) -c $< -o $@
+
+Phony targets (targets that are not files)
+  .PHONY: clean all run
+
+  clean:
+  [TAB] rm -f *.o program
+
+Complete Makefile example:
+  CC     = gcc
+  CFLAGS = -Wall -g
+  SRCS   = main.c utils.c
+  OBJS   = $(SRCS:.c=.o)
+
+  all: program
+
+  program: $(OBJS)
+  [TAB] $(CC) $(CFLAGS) -o $@ $^
+
+  %.o: %.c
+  [TAB] $(CC) $(CFLAGS) -c $< -o $@
+
+  .PHONY: clean
+  clean:
+  [TAB] rm -f $(OBJS) program
+
+
+----------------------------------------------------------------
+ QUICK TIPS FOR THE EXAM
+----------------------------------------------------------------
+
+Q1 Tips:
+  - Always start scripts with #!/bin/bash
+  - Use $1, $#, $@ for script arguments
+  - Combine grep | awk | sed for text processing tasks
+
+Q2 Tips:
+  - Include the right headers for each system call
+  - Always call wait(NULL) in parent after fork()
+  - fork() returns 0 to child, child's PID to parent, -1 on error
+
+Q3 Tips:
+  - TAB not spaces for recipe lines (most common mistake!)
+  - Add .PHONY: clean so clean works even if a file named
+    "clean" exists
+  - Use $(CC) and $(CFLAGS) variables instead of hardcoding
+
+================================================================
+                        GOOD LUCK!
+================================================================
