@@ -1,0 +1,1273 @@
+/*==========
+  ORACLE SQL
+============*/
+
+/*========================================================
+  TOPIC 1: CLEANUP (DROP OLD OBJECTS SAFELY)
+========================================================*/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TABLE emp_audit';
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TABLE employees';
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TABLE departments';
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP VIEW emp_view';
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END;
+/
+
+/*========================================================
+  TOPIC 2: DDL - CREATE TABLES
+========================================================*/
+
+CREATE TABLE departments (
+    department_id NUMBER PRIMARY KEY,
+    department_name VARCHAR2(100) NOT NULL UNIQUE
+);
+
+CREATE TABLE employees (
+    employee_id NUMBER PRIMARY KEY,
+    first_name VARCHAR2(50) NOT NULL,
+    last_name VARCHAR2(50) NOT NULL,
+    email VARCHAR2(100) UNIQUE,
+    salary NUMBER(10,2) CHECK (salary > 0),
+    hire_date DATE DEFAULT SYSDATE,
+    department_id NUMBER,
+    manager_id NUMBER,
+    status VARCHAR2(20) DEFAULT 'Active',
+
+    CONSTRAINT fk_department
+    FOREIGN KEY (department_id)
+    REFERENCES departments(department_id)
+);
+
+/*========================================================
+  TOPIC 3: ALTER TABLE
+========================================================*/
+
+-- Add column
+ALTER TABLE employees ADD phone VARCHAR2(20);
+
+-- Modify column size
+ALTER TABLE employees MODIFY phone VARCHAR2(30);
+
+-- Rename column
+ALTER TABLE employees RENAME COLUMN phone TO contact_number;
+
+/*========================================================
+  TOPIC 4: INSERT DATA
+========================================================*/
+
+INSERT INTO departments VALUES (10, 'HR');
+INSERT INTO departments VALUES (20, 'IT');
+INSERT INTO departments VALUES (30, 'Finance');
+
+INSERT INTO employees (
+    employee_id, first_name, last_name, email,
+    salary, department_id, manager_id
+)
+VALUES (
+    1, 'John', 'Doe', 'john@example.com',
+    5000, 10, NULL
+);
+
+INSERT INTO employees VALUES (
+    2, 'Sara', 'Ali', 'sara@example.com',
+    7000, SYSDATE, 20, 1, 'Active', NULL
+);
+
+INSERT INTO employees VALUES (
+    3, 'Ahmed', 'Khan', 'ahmed@example.com',
+    9000, SYSDATE, 20, 1, 'Active', NULL
+);
+
+COMMIT;
+
+/*========================================================
+  TOPIC 5: UPDATE
+========================================================*/
+
+UPDATE employees
+SET salary = salary + 1000
+WHERE employee_id = 1;
+
+UPDATE employees
+SET status = 'Promoted'
+WHERE employee_id = 2;
+
+COMMIT;
+
+/*========================================================
+  TOPIC 6: DELETE
+========================================================*/
+
+DELETE FROM employees
+WHERE employee_id = 999;
+
+COMMIT;
+
+/*========================================================
+  TOPIC 7: BASIC SELECT
+========================================================*/
+
+SELECT * FROM employees;
+
+SELECT first_name, salary FROM employees;
+
+SELECT DISTINCT department_id FROM employees;
+
+/*========================================================
+  TOPIC 8: WHERE CLAUSE
+========================================================*/
+
+SELECT * FROM employees WHERE salary > 5000;
+
+SELECT * FROM employees WHERE salary BETWEEN 5000 AND 10000;
+
+SELECT * FROM employees WHERE department_id IN (10,20);
+
+SELECT * FROM employees WHERE first_name LIKE 'S%';
+
+SELECT * FROM employees WHERE manager_id IS NULL;
+
+/*========================================================
+  TOPIC 9: ORDER BY
+========================================================*/
+
+SELECT * FROM employees ORDER BY salary DESC;
+
+/*========================================================
+  TOPIC 10: SINGLE ROW FUNCTIONS
+========================================================*/
+
+SELECT UPPER(first_name) FROM employees;
+SELECT LOWER(first_name) FROM employees;
+SELECT LENGTH(first_name) FROM employees;
+SELECT SUBSTR(first_name,1,2) FROM employees;
+SELECT ROUND(salary,0) FROM employees;
+
+SELECT SYSDATE FROM dual;
+SELECT TO_CHAR(SYSDATE,'DD-MON-YYYY') FROM dual;
+
+/*========================================================
+  TOPIC 11: NULL FUNCTIONS
+========================================================*/
+
+SELECT NVL(manager_id,0) FROM employees;
+SELECT NVL2(manager_id,'Has Manager','No Manager') FROM employees;
+
+/*========================================================
+  TOPIC 12: AGGREGATE FUNCTIONS
+========================================================*/
+
+SELECT COUNT(*) FROM employees;
+SELECT AVG(salary) FROM employees;
+SELECT MAX(salary) FROM employees;
+SELECT MIN(salary) FROM employees;
+SELECT SUM(salary) FROM employees;
+
+/*========================================================
+  TOPIC 13: GROUP BY
+========================================================*/
+
+SELECT department_id, AVG(salary)
+FROM employees
+GROUP BY department_id;
+
+/*========================================================
+  TOPIC 14: HAVING
+========================================================*/
+
+SELECT department_id, AVG(salary)
+FROM employees
+GROUP BY department_id
+HAVING AVG(salary) > 6000;
+
+/*========================================================
+  TOPIC 15: SINGLE ROW SUBQUERY
+========================================================*/
+
+SELECT * FROM employees
+WHERE salary = (
+    SELECT MAX(salary) FROM employees
+);
+
+/*========================================================
+  TOPIC 16: MULTIPLE ROW SUBQUERY
+========================================================*/
+
+SELECT * FROM employees
+WHERE department_id IN (
+    SELECT department_id FROM departments
+);
+
+/*========================================================
+  TOPIC 17: CORRELATED SUBQUERY
+========================================================*/
+
+SELECT e.first_name, e.salary
+FROM employees e
+WHERE e.salary > (
+    SELECT AVG(salary)
+    FROM employees
+    WHERE department_id = e.department_id
+);
+
+/*========================================================
+  TOPIC 18: INNER JOIN
+========================================================*/
+
+SELECT e.first_name, d.department_name
+FROM employees e
+INNER JOIN departments d
+ON e.department_id = d.department_id;
+
+/*========================================================
+  TOPIC 19: LEFT JOIN
+========================================================*/
+
+SELECT e.first_name, d.department_name
+FROM employees e
+LEFT JOIN departments d
+ON e.department_id = d.department_id;
+
+/*========================================================
+  TOPIC 20: SELF JOIN
+========================================================*/
+
+SELECT e.first_name AS employee,
+       m.first_name AS manager
+FROM employees e
+JOIN employees m
+ON e.manager_id = m.employee_id;
+
+/*========================================================
+  TOPIC 21: SET OPERATORS
+========================================================*/
+
+SELECT department_id FROM employees
+UNION
+SELECT department_id FROM departments;
+
+/*========================================================
+  TOPIC 22: VIEW
+========================================================*/
+
+CREATE VIEW emp_view AS
+SELECT employee_id, first_name, salary
+FROM employees;
+
+SELECT * FROM emp_view;
+
+/*========================================================
+  TOPIC 23: TRANSACTIONS
+========================================================*/
+
+SAVEPOINT before_change;
+
+UPDATE employees
+SET salary = salary + 500
+WHERE employee_id = 1;
+
+ROLLBACK TO before_change;
+
+/*========================================================
+  TOPIC 24: PL/SQL BLOCK
+========================================================*/
+
+SET SERVEROUTPUT ON;
+
+DECLARE
+    v_name VARCHAR2(50);
+BEGIN
+    v_name := 'Oracle PL/SQL';
+    DBMS_OUTPUT.PUT_LINE(v_name);
+END;
+/
+
+/*========================================================
+  TOPIC 25: SELECT INTO
+========================================================*/
+
+DECLARE
+    v_salary NUMBER;
+BEGIN
+    SELECT salary
+    INTO v_salary
+    FROM employees
+    WHERE employee_id = 1;
+
+    DBMS_OUTPUT.PUT_LINE(v_salary);
+END;
+/
+
+/*========================================================
+  TOPIC 26: IF ELSE
+========================================================*/
+
+DECLARE
+    v_salary NUMBER := 8000;
+BEGIN
+    IF v_salary > 7000 THEN
+        DBMS_OUTPUT.PUT_LINE('High Salary');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Low Salary');
+    END IF;
+END;
+/
+
+/*========================================================
+  TOPIC 27: LOOP
+========================================================*/
+
+BEGIN
+    FOR i IN 1..5 LOOP
+        DBMS_OUTPUT.PUT_LINE('Loop ' || i);
+    END LOOP;
+END;
+/
+
+/*========================================================
+  TOPIC 28: STORED PROCEDURE
+========================================================*/
+
+CREATE OR REPLACE PROCEDURE get_employee_name(
+    p_id IN NUMBER,
+    p_name OUT VARCHAR2
+)
+IS
+BEGIN
+    SELECT first_name
+    INTO p_name
+    FROM employees
+    WHERE employee_id = p_id;
+END;
+/
+
+DECLARE
+    v_name VARCHAR2(50);
+BEGIN
+    get_employee_name(1,v_name);
+    DBMS_OUTPUT.PUT_LINE(v_name);
+END;
+/
+
+/*========================================================
+  TOPIC 29: FUNCTION
+========================================================*/
+
+CREATE OR REPLACE FUNCTION annual_salary(
+    p_id NUMBER
+)
+RETURN NUMBER
+IS
+    v_salary NUMBER;
+BEGIN
+    SELECT salary
+    INTO v_salary
+    FROM employees
+    WHERE employee_id = p_id;
+
+    RETURN v_salary * 12;
+END;
+/
+
+SELECT annual_salary(1) FROM dual;
+
+/*========================================================
+  TOPIC 30: TRIGGER
+========================================================*/
+
+CREATE TABLE emp_audit (
+    old_salary NUMBER,
+    new_salary NUMBER,
+    change_date DATE
+);
+
+CREATE OR REPLACE TRIGGER trg_salary_audit
+BEFORE UPDATE OF salary
+ON employees
+FOR EACH ROW
+BEGIN
+    INSERT INTO emp_audit
+    VALUES (
+        :OLD.salary,
+        :NEW.salary,
+        SYSDATE
+    );
+END;
+/
+
+UPDATE employees
+SET salary = salary + 500
+WHERE employee_id = 1;
+
+SELECT * FROM emp_audit;
+
+/*========================================================
+  TOPIC 31: COMMENT
+========================================================*/
+
+COMMENT ON TABLE employees IS 'Employee Information Table';
+
+/*========================================================
+  TOPIC 32: DESCRIBE TABLE
+========================================================*/
+
+DESC employees;
+
+/*========================================================
+  TOPIC 33: TRUNCATE (OPTIONAL)
+========================================================*/
+
+-- TRUNCATE TABLE employees;
+
+/*=============
+  END OF SCRIPT
+===============*/
+
+
+// =======
+// MONGODB
+// =======
+
+// ------------------------------------------
+// 1. DATABASE COMMANDS
+// ------------------------------------------
+
+// Create / switch database
+use SchoolDB
+
+// Show all databases
+show dbs
+
+// Show current database
+db
+
+// Delete current database
+db.dropDatabase()
+
+
+// ------------------------------------------
+// 2. COLLECTION COMMANDS
+// ------------------------------------------
+
+// Create collection
+db.createCollection("Students")
+
+db.createCollection("Courses")
+
+// Show collections
+show collections
+
+// Delete collection
+db.Students.drop()
+db.Courses.drop()
+
+
+// ------------------------------------------
+// 3. INSERT DOCUMENTS
+// ------------------------------------------
+
+// Insert one document
+db.Students.insertOne({
+  name: "Ali",
+  age: 20,
+  scores: {
+    math: 85,
+    science: 90
+  }
+})
+
+// Insert multiple documents
+db.Students.insertMany([
+  {
+    "_id": 1,
+    "name": "Alice",
+    "age": 20,
+    "scores": {
+      "math": 85,
+      "science": 90
+    }
+  },
+  {
+    "_id": 2,
+    "name": "Bob",
+    "age": 22,
+    "scores": {
+      "math": 78,
+      "science": 82
+    }
+  },
+  {
+    "_id": 3,
+    "name": "Charlie",
+    "age": 21,
+    "scores": {
+      "math": 92,
+      "science": 88
+    }
+  },
+  {
+    "_id": 4,
+    "name": "Daisy",
+    "age": 23,
+    "scores": {
+      "math": 68,
+      "science": 74
+    }
+  }
+])
+
+db.Courses.insertMany([
+  {
+    "_id": 101,
+    "courseName": "Mathematics",
+    "instructor": "Dr. Smith",
+    "studentsEnrolled": [1,2,3]
+  },
+  {
+    "_id": 102,
+    "courseName": "Science",
+    "instructor": "Dr. Adams",
+    "studentsEnrolled": [2,3,4]
+  }
+])
+
+
+// ------------------------------------------
+// 4. READ DATA
+// ------------------------------------------
+
+// Show all documents
+db.Students.find()
+
+// Show one document
+db.Students.findOne()
+
+// Pretty print
+db.Students.find().pretty()
+
+
+// ------------------------------------------
+// 5. WHERE CONDITIONS
+// ------------------------------------------
+
+// Equal
+db.Students.find({ name: "Alice" })
+
+// Greater than
+db.Students.find({
+  age: { $gt: 20 }
+})
+
+// Greater than equal
+db.Students.find({
+  "scores.math": { $gte: 85 }
+})
+
+// Less than
+db.Students.find({
+  age: { $lt: 22 }
+})
+
+// Less than equal
+db.Students.find({
+  age: { $lte: 22 }
+})
+
+// Not equal
+db.Students.find({
+  age: { $ne: 20 }
+})
+
+
+// ------------------------------------------
+// 6. LOGICAL OPERATORS
+// ------------------------------------------
+
+// AND
+db.Students.find({
+  $and: [
+    { age: { $gt: 20 } },
+    { "scores.math": { $gte: 80 } }
+  ]
+})
+
+// OR
+db.Students.find({
+  $or: [
+    { age: { $lt: 21 } },
+    { "scores.math": { $gte: 90 } }
+  ]
+})
+
+
+// ------------------------------------------
+// 7. ARRAY SEARCH
+// ------------------------------------------
+
+// Find course where array contains 3
+db.Courses.find({
+  studentsEnrolled: 3
+})
+
+
+// ------------------------------------------
+// 8. UPDATE
+// ------------------------------------------
+
+// Update one document
+db.Students.updateOne(
+  { name: "Alice" },
+  {
+    $set: {
+      age: 21
+    }
+  }
+)
+
+// Update many documents
+db.Students.updateMany(
+  { age: { $gt: 20 } },
+  {
+    $set: {
+      status: "active"
+    }
+  }
+)
+
+
+// ------------------------------------------
+// 9. INCREMENT / DECREMENT
+// ------------------------------------------
+
+// Increment by 1
+db.Students.updateOne(
+  { name: "Bob" },
+  {
+    $inc: {
+      "scores.science": 1
+    }
+  }
+)
+
+// Increment by 5
+db.Students.updateMany(
+  {
+    "scores.science": { $lt: 80 }
+  },
+  {
+    $inc: {
+      "scores.math": 5
+    }
+  }
+)
+
+
+// ------------------------------------------
+// 10. DELETE
+// ------------------------------------------
+
+// Delete one document
+db.Students.deleteOne({
+  name: "Daisy"
+})
+
+// Delete many documents
+db.Students.deleteMany({
+  age: { $lt: 21 }
+})
+
+
+// ------------------------------------------
+// 11. COUNT
+// ------------------------------------------
+
+// Count all
+db.Students.countDocuments()
+
+// Count filtered
+db.Students.countDocuments({
+  age: { $gt: 20 }
+})
+
+
+// ------------------------------------------
+// 12. SORT
+// ------------------------------------------
+
+// Ascending
+db.Students.find().sort({
+  age: 1
+})
+
+// Descending
+db.Students.find().sort({
+  age: -1
+})
+
+
+// ------------------------------------------
+// 13. LIMIT
+// ------------------------------------------
+
+// First 2 documents
+db.Students.find().limit(2)
+
+
+// ------------------------------------------
+// 14. SKIP
+// ------------------------------------------
+
+// Skip first 2
+db.Students.find().skip(2)
+
+
+// ------------------------------------------
+// 15. PROJECTION
+// ------------------------------------------
+
+// Show selected fields
+db.Students.find(
+  {},
+  {
+    name: 1,
+    age: 1
+  }
+)
+
+// Hide field
+db.Students.find(
+  {},
+  {
+    age: 0
+  }
+)
+
+
+// ------------------------------------------
+// 16. TEXT SEARCH
+// ------------------------------------------
+
+// Create text index
+db.Courses.createIndex({
+  courseName: "text"
+})
+
+// Search text
+db.Courses.find({
+  $text: {
+    $search: "Science"
+  }
+})
+
+
+// ------------------------------------------
+// 17. REGEX
+// ------------------------------------------
+
+// Starts with A
+db.Students.find({
+  name: /^A/
+})
+
+// Ends with e
+db.Students.find({
+  name: /e$/
+})
+
+// Contains li
+db.Students.find({
+  name: /li/
+})
+
+
+// ------------------------------------------
+// 18. AGGREGATION
+// ------------------------------------------
+
+// Average math score
+db.Students.aggregate([
+  {
+    $group: {
+      _id: null,
+      averageMath: {
+        $avg: "$scores.math"
+      }
+    }
+  }
+])
+
+// Count students by age
+db.Students.aggregate([
+  {
+    $group: {
+      _id: "$age",
+      totalStudents: {
+        $sum: 1
+      }
+    }
+  }
+])
+
+
+// ------------------------------------------
+// 19. ATOMIC OPERATIONS
+// ------------------------------------------
+
+// Find and update
+db.Students.findOneAndUpdate(
+  { name: "Alice" },
+  {
+    $set: {
+      age: 25
+    }
+  }
+)
+
+// Find and delete
+db.Students.findOneAndDelete({
+  name: "Daisy"
+})
+
+
+// ====
+// END
+// ===
+/*========================================================
+  QUESTION 1: BASICS OF SQL
+========================================================*/
+
+-- i) Employees with job titles + hire year/month
+SELECT 
+    e.first_name,
+    e.last_name,
+    j.job_title,
+    EXTRACT(YEAR FROM e.hire_date)  AS hire_year,
+    EXTRACT(MONTH FROM e.hire_date) AS hire_month
+FROM employees e
+JOIN jobs j ON e.job_id = j.job_id;
+
+----------------------------------------------------------
+
+-- ii) commission > 5% OR job title = SA_REP
+SELECT 
+    e.first_name,
+    e.last_name,
+    e.commission_pct,
+    j.job_title
+FROM employees e
+JOIN jobs j ON e.job_id = j.job_id
+WHERE e.commission_pct > 0.05
+   OR j.job_title = 'SA_REP';
+
+----------------------------------------------------------
+
+-- iii) Last hired employee per department (day/month/year)
+SELECT 
+    department_id,
+    employee_id,
+    first_name,
+    last_name,
+    EXTRACT(DAY FROM hire_date)   AS hire_day,
+    EXTRACT(MONTH FROM hire_date) AS hire_month,
+    EXTRACT(YEAR FROM hire_date)  AS hire_year
+FROM employees e
+WHERE hire_date = (
+    SELECT MAX(hire_date)
+    FROM employees
+    WHERE department_id = e.department_id
+);
+
+----------------------------------------------------------
+
+-- iv) Name ends with 'ith'
+SELECT *
+FROM employees
+WHERE last_name LIKE '%ith';
+
+----------------------------------------------------------
+
+-- v) Departments where total salary > avg dept salary
+SELECT department_id, SUM(salary) AS total_salary
+FROM employees
+GROUP BY department_id
+HAVING SUM(salary) > (
+    SELECT AVG(dept_total)
+    FROM (
+        SELECT SUM(salary) AS dept_total
+        FROM employees
+        GROUP BY department_id
+    )
+);
+
+/*========================================================
+  QUESTION 2: JOINS AND SUBQUERIES
+========================================================*/
+
+-- i) Employee + Department sorted
+SELECT 
+    e.first_name,
+    e.last_name,
+    d.department_name
+FROM employees e
+JOIN departments d ON e.department_id = d.department_id
+ORDER BY d.department_name ASC;
+
+----------------------------------------------------------
+
+-- ii) Salary > highest salary in department 80
+SELECT *
+FROM employees
+WHERE salary > (
+    SELECT MAX(salary)
+    FROM employees
+    WHERE department_id = 80
+);
+
+----------------------------------------------------------
+
+-- iii) Exclude employees from New York
+SELECT 
+    e.employee_id,
+    e.first_name,
+    e.last_name,
+    d.department_name,
+    l.city
+FROM employees e
+JOIN departments d ON e.department_id = d.department_id
+JOIN locations l ON d.location_id = l.location_id
+WHERE l.city <> 'New York';
+
+----------------------------------------------------------
+
+-- iv) Second highest salary per department
+SELECT *
+FROM (
+    SELECT 
+        e.employee_id,
+        e.first_name,
+        d.department_name,
+        e.salary,
+        DENSE_RANK() OVER (
+            PARTITION BY e.department_id 
+            ORDER BY e.salary DESC
+        ) rnk
+    FROM employees e
+    JOIN departments d ON e.department_id = d.department_id
+)
+WHERE rnk = 2;
+
+----------------------------------------------------------
+
+-- v) Employees with salary > 10000
+SELECT 
+    e.first_name,
+    e.last_name,
+    e.salary,
+    d.department_name
+FROM employees e
+JOIN departments d ON e.department_id = d.department_id
+WHERE e.salary > 10000;
+
+/*========================================================
+  QUESTION 3: TRIGGERS & TRANSACTIONS
+========================================================*/
+
+-- Salary update transaction
+BEGIN
+    UPDATE employees
+    SET salary = salary * 1.10
+    WHERE job_id = 'IT_PROG';
+    COMMIT;
+END;
+/
+
+----------------------------------------------------------
+
+-- Salary log table
+CREATE TABLE salary_log (
+    employee_id NUMBER,
+    old_salary NUMBER,
+    new_salary NUMBER,
+    change_date DATE
+);
+
+-- Trigger: log salary changes
+CREATE OR REPLACE TRIGGER trg_salary_update
+BEFORE UPDATE OF salary ON employees
+FOR EACH ROW
+BEGIN
+    INSERT INTO salary_log
+    VALUES (:OLD.employee_id, :OLD.salary, :NEW.salary, SYSDATE);
+END;
+/
+
+----------------------------------------------------------
+
+-- Transaction with rollback
+BEGIN
+    INSERT INTO employees VALUES (...);
+
+    UPDATE employees
+    SET department_id = 10
+    WHERE employee_id = 101;
+
+    COMMIT;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+END;
+/
+
+----------------------------------------------------------
+
+-- Prevent delete if salary > 10000
+CREATE OR REPLACE TRIGGER trg_prevent_delete
+BEFORE DELETE ON employees
+FOR EACH ROW
+BEGIN
+    IF :OLD.salary > 10000 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Cannot delete high salary employee');
+    END IF;
+END;
+/
+
+----------------------------------------------------------
+
+-- Department manager change log
+CREATE TABLE dept_manager_log (
+    dept_id NUMBER,
+    old_manager NUMBER,
+    new_manager NUMBER,
+    change_date DATE
+);
+
+CREATE OR REPLACE TRIGGER trg_manager_change
+BEFORE UPDATE OF manager_id ON departments
+FOR EACH ROW
+BEGIN
+    INSERT INTO dept_manager_log
+    VALUES (:OLD.department_id, :OLD.manager_id, :NEW.manager_id, SYSDATE);
+END;
+/
+
+/*========================================================
+  QUESTION 4: PROCEDURES & FUNCTIONS
+========================================================*/
+
+-- Increase salary by department
+CREATE OR REPLACE PROCEDURE increase_salary(dept_id NUMBER)
+AS
+BEGIN
+    UPDATE employees
+    SET salary = salary * 1.10
+    WHERE department_id = dept_id;
+END;
+/
+
+----------------------------------------------------------
+
+-- Function: dept info
+CREATE OR REPLACE FUNCTION dept_info(emp_id NUMBER)
+RETURN VARCHAR2
+AS
+    v_result VARCHAR2(200);
+BEGIN
+    SELECT COUNT(*), SUM(salary)
+    INTO v_result
+    FROM employees
+    WHERE department_id = (
+        SELECT department_id FROM employees WHERE employee_id = emp_id
+    );
+
+    RETURN v_result;
+END;
+/
+
+----------------------------------------------------------
+
+-- Delete employee if > 10 years
+CREATE OR REPLACE PROCEDURE delete_old(emp_id NUMBER)
+AS
+BEGIN
+    DELETE FROM employees
+    WHERE employee_id = emp_id
+    AND MONTHS_BETWEEN(SYSDATE, hire_date)/12 > 10;
+END;
+/
+
+----------------------------------------------------------
+
+-- Function: employee details
+CREATE OR REPLACE FUNCTION emp_details(emp_id NUMBER)
+RETURN VARCHAR2
+AS
+    v_result VARCHAR2(200);
+BEGIN
+    SELECT e.job_id, e.salary, d.department_name
+    INTO v_result
+    FROM employees e
+    JOIN departments d ON e.department_id = d.department_id
+    WHERE e.employee_id = emp_id;
+
+    RETURN v_result;
+END;
+/
+
+----------------------------------------------------------
+
+-- Transfer employee + log
+CREATE TABLE emp_transfer_log (
+    emp_id NUMBER,
+    old_dept NUMBER,
+    new_dept NUMBER,
+    change_date DATE
+);
+
+CREATE OR REPLACE PROCEDURE transfer_emp(emp_id NUMBER, new_dept NUMBER)
+AS
+BEGIN
+    INSERT INTO emp_transfer_log
+    SELECT employee_id, department_id, new_dept, SYSDATE
+    FROM employees
+    WHERE employee_id = emp_id;
+
+    UPDATE employees
+    SET department_id = new_dept
+    WHERE employee_id = emp_id;
+END;
+/
+
+/*========================================================
+  QUESTION 5: DDL + DML
+========================================================*/
+
+CREATE TABLE training_sessions (
+    session_id NUMBER PRIMARY KEY,
+    session_title VARCHAR2(100),
+    start_date DATE,
+    end_date DATE,
+    instructor_name VARCHAR2(100)
+);
+
+CREATE TABLE employee_training (
+    employee_id NUMBER,
+    session_id NUMBER,
+    attendance_status VARCHAR2(20),
+    score NUMBER,
+    FOREIGN KEY (employee_id) REFERENCES employees(employee_id),
+    FOREIGN KEY (session_id) REFERENCES training_sessions(session_id)
+);
+
+CREATE TABLE performance_reviews (
+    review_id NUMBER PRIMARY KEY,
+    employee_id NUMBER,
+    review_date DATE,
+    rating NUMBER,
+    FOREIGN KEY (employee_id) REFERENCES employees(employee_id)
+);
+
+----------------------------------------------------------
+
+INSERT INTO training_sessions
+VALUES (1, 'Advanced SQL', SYSDATE, SYSDATE+5, 'Dr. Fatima');
+
+----------------------------------------------------------
+
+UPDATE employee_training
+SET attendance_status = 'Attended'
+WHERE employee_id IN (101, 105);
+
+----------------------------------------------------------
+
+DELETE FROM training_sessions
+WHERE end_date < SYSDATE;
+
+----------------------------------------------------------
+
+SELECT 
+    e.first_name,
+    e.last_name,
+    et.score
+FROM employees e
+JOIN employee_training et ON e.employee_id = et.employee_id
+JOIN training_sessions ts ON et.session_id = ts.session_id
+WHERE ts.session_title = 'Advanced SQL'
+AND et.attendance_status = 'Attended';
+
+/*========================================================
+  QUESTION 6: MONGODB
+========================================================*/
+
+db.students.insertMany([
+  { name: "Ahsan", age: 26, course: "AI" },
+  { name: "Maryum", age: 20, course: "Database" }
+]);
+
+----------------------------------------------------------
+
+db.products.insertOne({
+  name: "USB Drive",
+  price: 800,
+  inStock: true
+});
+
+----------------------------------------------------------
+
+db.courses.insertOne({
+  courseName: "AI Fundamentals",
+  duration: "12 weeks",
+  instructor: {
+    name: "Dr. Fatima",
+    experience: 10
+  }
+});
+
+----------------------------------------------------------
+
+db.students.find({
+  course: { $in: ["AI", "Database"] },
+  age: { $lt: 25 }
+});
+
+----------------------------------------------------------
+
+db.courses.find({
+  "instructor.experience": 10,
+  duration: "12 weeks"
+});
+
+----------------------------------------------------------
+
+db.products.updateMany(
+  { price: { $lt: 1000 } },
+  { $inc: { price: 200 } }
+);
+
+----------------------------------------------------------
+
+db.students.deleteMany({
+  age: { $gt: 25 },
+  course: "AI"
+});
