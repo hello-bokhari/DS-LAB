@@ -1,0 +1,2933 @@
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings('ignore')
+
+# Comment this if the data visualisations doesn't work on your side
+#%matplotlib inline
+
+plt.style.use('bmh')
+
+df = pd.read_csv('train.csv')
+df.head()
+df.info()
+
+# df.count() does not include NaN values
+df2 = df[[column for column in df if df[column].count() / len(df) >= 0.3]]
+del df2['Id']
+print("List of dropped columns:", end=" ")
+for c in df.columns:
+    if c not in df2.columns:
+        print(c, end=", ")
+print('\n')
+df = df2
+
+#How the housing price is distributed
+print(df['SalePrice'].describe())
+plt.figure(figsize=(9, 8))
+sns.distplot(df['SalePrice'], color='g', bins=100, hist_kws={'alpha': 0.4})
+
+#List all the types of our data from our dataset and take only the numerical ones:
+list(set(df.dtypes.tolist()))
+
+df_num = df.select_dtypes(include = ['float64', 'int64'])
+df_num.head()
+
+df_num.hist(figsize=(16, 20), bins=50, xlabelsize=8, ylabelsize=8)
+# ; avoid having the matplotlib verbose informations
+
+df_num_corr = df_num.corr()['SalePrice'][:-1] # -1 because the latest row is SalePrice
+golden_features_list = df_num_corr[abs(df_num_corr) > 0.5].sort_values(ascending=False)
+print("There is {} strongly correlated values with SalePrice:\n{}".format(len(golden_features_list),golden_features_list))
+
+
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+import warnings
+warnings.filterwarnings('ignore')
+
+# Load the document
+doc = pd.read_csv('Sales_Transactions_Records.csv')
+
+#display first five lines
+doc.head()
+
+#display dimension of data
+print(doc.shape)
+#display column headings
+print(doc.columns)
+#display general info about dataset
+doc.info()
+#display statistical info
+doc.describe()
+#statistical data about non number data type
+doc.describe(include = ['object'])
+#counts how many times each unique value in a column
+doc['Country'].value_counts()
+doc['Country'].value_counts(normalize=True)
+#sort entire data set by column
+doc.sort_values(by = 'Year', ascending= True).head()
+#multi column sort
+doc.sort_values(by = ['Country', 'Item'], ascending= [False,True]).head()
+#print 1 column
+print(doc['Item'])
+doc[doc['Country'] == 'USA'].head()
+doc[(doc['Country'] == 'USA') & (doc['Item'] == 'Doll')]['Revenue'].max()
+#return column by index
+doc.loc[0:5, 'Item':'Quantity']
+doc.iloc[0:5, 6:9]
+#apply function to cells, columns, rows
+doc.apply(np.max, axis=0) #columns
+doc.apply(np.max, axis=1) #rows
+#cannot be done on text and numbers
+doc[['Unit_Price', 'Quantity', 'Revenue']].apply(np.max, axis=1)
+doc[doc['Country'].apply(lambda Country: Country[0] == 'U')].head()
+d = {'No' : False, 'Yes' : True}
+# df['International plan'] = df['International plan'].map(d)
+# df = df.replace({'Voice mail plan': d})
+# df.head()
+columns_to_show = ['Unit_Price','Quantity','Revenue']
+doc.groupby(['Item'])[columns_to_show].describe(percentiles=[])
+doc.groupby(['Item'])[columns_to_show].agg([np.mean, np.std, np.min, np.max])
+pd.crosstab(doc['Item'], doc['Revenue'])
+pd.crosstab(df['churn'], df['international plan'], margins=True)
+doc.pivot_table(['Revenue'],['Country'],aggfunc='std')
+doc.pivot_table(values='Revenue', index='Item', columns='Country', aggfunc='std')
+
+total_calls = doc['Total day calls'] + doc['Total eve calls'] + doc['Total night calls'] + doc['Total intl calls']
+doc.insert(loc=len(doc.columns), column='Total calls', value=total_calls)
+doc.head()
+# loc parameter is the number of columns after which to insert the Series object
+# we set it to len(df.columns) to paste it at the very end of the dataframe
+
+# get rid of just created columns
+df.drop(['Total charge', 'Total calls'], axis=1, inplace=True)
+# and here’s how you can delete rows
+df.drop([1, 2]).head()
+sns.countplot(x='international plan', hue='churn', data=df)
+
+#Predicting telecom churn Using a crosstab contingency table
+df['Many_service_calls'] = (df['customer service calls'] > 3).astype('int')
+pd.crosstab(df['Many_service_calls'], df['churn'], margins=True)
+
+
+
+#Basic CSP (Simple Constraint)
+from ortools.sat.python import cp_model
+
+# Create model
+model = cp_model.CpModel()
+
+# Variables
+num_vals = 3
+x = model.NewIntVar(0, num_vals - 1, "x")
+y = model.NewIntVar(0, num_vals - 1, "y")
+z = model.NewIntVar(0, num_vals - 1, "z")
+
+# Constraint
+model.Add(x != y)
+
+# Solve
+solver = cp_model.CpSolver()
+status = solver.Solve(model)
+
+if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+    print(f"x = {solver.Value(x)}")
+    print(f"y = {solver.Value(y)}")
+    print(f"z = {solver.Value(z)}")
+else:
+    print("No solution found.")
+
+#csp as Function
+from ortools.sat.python import cp_model
+
+def simple_sat_program():
+    model = cp_model.CpModel()
+
+    num_vals = 3
+    x = model.NewIntVar(0, num_vals - 1, "x")
+    y = model.NewIntVar(0, num_vals - 1, "y")
+    z = model.NewIntVar(0, num_vals - 1, "z")
+
+    model.Add(x != y)
+
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
+
+    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+        print(f"x = {solver.Value(x)}")
+        print(f"y = {solver.Value(y)}")
+        print(f"z = {solver.Value(z)}")
+    else:
+        print("No solution found.")
+
+simple_sat_program()
+
+#csp printall solution
+from ortools.sat.python import cp_model
+
+class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
+    def __init__(self, variables):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.variables = variables
+        self.solution_count = 0
+
+    def OnSolutionCallback(self):
+        self.solution_count += 1
+        for v in self.variables:
+            print(f"{v.Name()}={self.Value(v)}", end=" ")
+        print()
+
+# Model
+model = cp_model.CpModel()
+
+num_vals = 3
+x = model.NewIntVar(0, num_vals - 1, "x")
+y = model.NewIntVar(0, num_vals - 1, "y")
+z = model.NewIntVar(0, num_vals - 1, "z")
+
+model.Add(x != y)
+
+solver = cp_model.CpSolver()
+solution_printer = VarArraySolutionPrinter([x, y, z])
+
+solver.parameters.enumerate_all_solutions = True
+solver.Solve(model, solution_printer)
+
+print("Total solutions:", solution_printer.solution_count)
+
+#csp Search All Solutions
+from ortools.sat.python import cp_model
+
+class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
+    def __init__(self, variables):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.variables = variables
+        self.solution_count = 0
+
+    def OnSolutionCallback(self):
+        self.solution_count += 1
+        for v in self.variables:
+            print(f"{v.Name()}={self.Value(v)}", end=" ")
+        print()
+
+def search_for_all_solutions():
+    model = cp_model.CpModel()
+
+    num_vals = 3
+    x = model.NewIntVar(0, num_vals - 1, "x")
+    y = model.NewIntVar(0, num_vals - 1, "y")
+    z = model.NewIntVar(0, num_vals - 1, "z")
+
+    model.Add(x != y)
+
+    solver = cp_model.CpSolver()
+    solution_printer = VarArraySolutionPrinter([x, y, z])
+
+    solver.parameters.enumerate_all_solutions = True
+    status = solver.Solve(model, solution_printer)
+
+    print("Status:", solver.StatusName(status))
+    print("Number of solutions:", solution_printer.solution_count)
+
+search_for_all_solutions()
+
+#Optimization Problem (ILP)
+from ortools.sat.python import cp_model
+
+def main():
+    model = cp_model.CpModel()
+
+    var_upper_bound = max(50, 45, 37)
+
+    x = model.NewIntVar(0, var_upper_bound, "x")
+    y = model.NewIntVar(0, var_upper_bound, "y")
+    z = model.NewIntVar(0, var_upper_bound, "z")
+
+    # Constraints
+    model.Add(2 * x + 7 * y + 3 * z <= 50)
+    model.Add(3 * x - 5 * y + 7 * z <= 45)
+    model.Add(5 * x + 2 * y - 6 * z <= 37)
+
+    # Objective
+    model.Maximize(2 * x + 2 * y + 3 * z)
+
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
+
+    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+        print("Maximum value =", solver.ObjectiveValue())
+        print("x =", solver.Value(x))
+        print("y =", solver.Value(y))
+        print("z =", solver.Value(z))
+    else:
+        print("No solution found.")
+
+    print("\nStatistics")
+    print("Status:", solver.StatusName(status))
+    print("Conflicts:", solver.NumConflicts())
+    print("Branches:", solver.NumBranches())
+    print("Wall time:", solver.WallTime())
+
+main()
+
+#nqueen csp
+from ortools.sat.python import cp_model
+import time
+
+board_size = 8
+model = cp_model.CpModel()
+
+# Variables
+queens = [model.NewIntVar(0, board_size - 1, f"x_{i}") for i in range(board_size)]
+
+# Constraints
+model.AddAllDifferent(queens)
+model.AddAllDifferent([queens[i] + i for i in range(board_size)])
+model.AddAllDifferent([queens[i] - i for i in range(board_size)])
+
+# Solution printer
+class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
+    def __init__(self, queens):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.queens = queens
+        self.solution_count = 0
+        self.start_time = time.time()
+
+    def OnSolutionCallback(self):
+        print(f"\nSolution {self.solution_count}")
+        self.solution_count += 1
+
+        for i in range(len(self.queens)):
+            for j in range(len(self.queens)):
+                if self.Value(self.queens[j]) == i:
+                    print("Q", end=" ")
+                else:
+                    print("_", end=" ")
+            print()
+
+# Solve
+solver = cp_model.CpSolver()
+solution_printer = NQueenSolutionPrinter(queens)
+
+solver.parameters.enumerate_all_solutions = True
+solver.Solve(model, solution_printer)
+
+print("\nTotal solutions:", solution_printer.solution_count)
+
+#csp task1
+from ortools.sat.python import cp_model
+
+# Create model
+model = cp_model.CpModel()
+
+# Variables: each employee gets a shift (0,1,2)
+Alice = model.NewIntVar(0, 2, 'Alice')
+Bob = model.NewIntVar(0, 2, 'Bob')
+Charlie = model.NewIntVar(0, 2, 'Charlie')
+
+# Constraint: all must have different shifts
+model.AddAllDifferent([Alice, Bob, Charlie])
+
+# Constraint: Alice cannot work Morning (0)
+model.Add(Alice != 0)
+
+# Solve
+solver = cp_model.CpSolver()
+status = solver.Solve(model)
+
+# Output
+if status == cp_model.FEASIBLE or status == cp_model.OPTIMAL:
+    shifts = ["Morning", "Afternoon", "Evening"]
+    print("Shift Assignment:")
+    print("Alice:", shifts[solver.Value(Alice)])
+    print("Bob:", shifts[solver.Value(Bob)])
+    print("Charlie:", shifts[solver.Value(Charlie)])
+else:
+    print("No solution found.")
+
+#task2
+from ortools.sat.python import cp_model
+
+model = cp_model.CpModel()
+
+# Variables
+S = model.NewIntVar(1, 9, 'S')  # cannot be 0
+E = model.NewIntVar(0, 9, 'E')
+N = model.NewIntVar(0, 9, 'N')
+D = model.NewIntVar(0, 9, 'D')
+M = model.NewIntVar(1, 9, 'M')  # cannot be 0
+O = model.NewIntVar(0, 9, 'O')
+R = model.NewIntVar(0, 9, 'R')
+Y = model.NewIntVar(0, 9, 'Y')
+
+# All digits must be different
+model.AddAllDifferent([S, E, N, D, M, O, R, Y])
+
+# SEND + MORE = MONEY
+model.Add(
+    1000*S + 100*E + 10*N + D +
+    1000*M + 100*O + 10*R + E ==
+    10000*M + 1000*O + 100*N + 10*E + Y
+)
+
+# Solve
+solver = cp_model.CpSolver()
+status = solver.Solve(model)
+
+# Output
+if status == cp_model.FEASIBLE or status == cp_model.OPTIMAL:
+    print("Solution:")
+    print("S =", solver.Value(S))
+    print("E =", solver.Value(E))
+    print("N =", solver.Value(N))
+    print("D =", solver.Value(D))
+    print("M =", solver.Value(M))
+    print("O =", solver.Value(O))
+    print("R =", solver.Value(R))
+    print("Y =", solver.Value(Y))
+else:
+    print("No solution found.")
+
+#task3
+from ortools.linear_solver import pywraplp
+
+# Create solver
+solver = pywraplp.Solver.CreateSolver('SCIP')
+
+# Variables (integer production quantities)
+L = solver.IntVar(10, solver.infinity(), 'Laptops')
+P = solver.IntVar(10, solver.infinity(), 'Phones')
+T = solver.IntVar(10, solver.infinity(), 'Tablets')
+
+# Resource constraints
+# Microchips
+solver.Add(2*L + 1*P + 1*T <= 100)
+
+# Screens
+solver.Add(1*L + 1*P + 1*T <= 80)
+
+# Batteries
+solver.Add(1*L + 1*P + 2*T <= 120)
+
+# Objective: Maximize profit
+solver.Maximize(500*L + 300*P + 400*T)
+
+# Solve
+status = solver.Solve()
+
+# Output
+if status == pywraplp.Solver.OPTIMAL:
+    print("Optimal Production Plan:")
+    print("Laptops =", int(L.solution_value()))
+    print("Phones =", int(P.solution_value()))
+    print("Tablets =", int(T.solution_value()))
+    print("Maximum Profit = $", int(solver.Objective().Value()))
+else:
+    print("No optimal solution found.")
+
+
+#Minimax Algorithm
+import math
+
+
+# Node class
+class Node:
+    def __init__(self, value=None):
+        self.value = value
+        self.children = []
+        self.minmax_value = None
+
+
+# Minimax Agent
+class MinimaxAgent:
+    def __init__(self, depth):
+        self.depth = depth
+
+    def formulate_goal(self, node):
+        # Goal is achieved when root minimax value is computed
+        return "Goal reached" if node.minmax_value is not None else "Searching"
+
+    def act(self, node, environment):
+        goal_status = self.formulate_goal(node)
+
+        if goal_status == "Goal reached":
+            return f"Minimax value for root node: {node.minmax_value}"
+        else:
+            return environment.compute_minimax(node, self.depth)
+
+
+# Environment
+class Environment:
+    def __init__(self, tree):
+        self.tree = tree
+        self.computed_nodes = []
+
+    def get_percept(self, node):
+        return node
+
+    def compute_minimax(self, node, depth, maximizing_player=True):
+        # Base case
+        if depth == 0 or not node.children:
+            self.computed_nodes.append(node.value)
+            return node.value
+
+        # Maximizer
+        if maximizing_player:
+            value = -math.inf
+
+            for child in node.children:
+                child_value = self.compute_minimax(
+                    child,
+                    depth - 1,
+                    False
+                )
+                value = max(value, child_value)
+
+            node.minmax_value = value
+            self.computed_nodes.append(node.value)
+            return value
+
+        # Minimizer
+        else:
+            value = math.inf
+
+            for child in node.children:
+                child_value = self.compute_minimax(
+                    child,
+                    depth - 1,
+                    True
+                )
+                value = min(value, child_value)
+
+            node.minmax_value = value
+            self.computed_nodes.append(node.value)
+            return value
+
+
+# Run Agent
+def run_agent(agent, environment, start_node):
+    percept = environment.get_percept(start_node)
+    agent.act(percept, environment)
+
+
+# Sample Tree Construction
+root = Node('A')
+
+n1 = Node('B')
+n2 = Node('C')
+root.children = [n1, n2]
+
+n3 = Node('D')
+n4 = Node('E')
+n5 = Node('F')
+n6 = Node('G')
+
+n1.children = [n3, n4]
+n2.children = [n5, n6]
+
+n7 = Node(2)
+n8 = Node(3)
+n9 = Node(5)
+n10 = Node(9)
+
+n3.children = [n7, n8]
+n4.children = [n9, n10]
+
+n11 = Node(0)
+n12 = Node(1)
+n13 = Node(7)
+n14 = Node(5)
+
+n5.children = [n11, n12]
+n6.children = [n13, n14]
+
+
+# Define Depth
+depth = 3
+
+# Create Agent and Environment
+agent = MinimaxAgent(depth)
+environment = Environment(root)
+
+# Run
+run_agent(agent, environment, root)
+
+# Output
+print("Computed Nodes:", environment.computed_nodes)
+
+print("\nMinimax Values:")
+print("A:", root.minmax_value)
+print("B:", n1.minmax_value)
+print("C:", n2.minmax_value)
+print("D:", n3.minmax_value)
+print("E:", n4.minmax_value)
+print("F:", n5.minmax_value)
+print("G:", n6.minmax_value)
+
+#Alpha-Beta Pruning
+import math
+
+
+# Node class
+class Node:
+    def __init__(self, value=None):
+        self.value = value
+        self.children = []
+        self.minmax_value = None
+
+
+# Minimax Agent with Alpha-Beta
+class MinimaxAgent:
+    def __init__(self, depth):
+        self.depth = depth
+
+    def formulate_goal(self, node):
+        return "Goal reached" if node.minmax_value is not None else "Searching"
+
+    def act(self, node, environment):
+        goal_status = self.formulate_goal(node)
+
+        if goal_status == "Goal reached":
+            return f"Minimax value for root node: {node.minmax_value}"
+        else:
+            return environment.alpha_beta_search(
+                node,
+                self.depth,
+                -math.inf,
+                math.inf,
+                True
+            )
+
+
+# Environment
+class Environment:
+    def __init__(self, tree):
+        self.tree = tree
+        self.computed_nodes = []
+
+    def get_percept(self, node):
+        return node
+
+    def alpha_beta_search(
+        self,
+        node,
+        depth,
+        alpha,
+        beta,
+        maximizing_player=True
+    ):
+        self.computed_nodes.append(node.value)
+
+        # Base case
+        if depth == 0 or not node.children:
+            return node.value
+
+        # Maximizer
+        if maximizing_player:
+            value = -math.inf
+
+            for child in node.children:
+                value = max(
+                    value,
+                    self.alpha_beta_search(
+                        child,
+                        depth - 1,
+                        alpha,
+                        beta,
+                        False
+                    )
+                )
+
+                alpha = max(alpha, value)
+
+                # Pruning
+                if beta <= alpha:
+                    print("Pruned node:", child.value)
+                    break
+
+            node.minmax_value = value
+            return value
+
+        # Minimizer
+        else:
+            value = math.inf
+
+            for child in node.children:
+                value = min(
+                    value,
+                    self.alpha_beta_search(
+                        child,
+                        depth - 1,
+                        alpha,
+                        beta,
+                        True
+                    )
+                )
+
+                beta = min(beta, value)
+
+                # Pruning
+                if beta <= alpha:
+                    print("Pruned node:", child.value)
+                    break
+
+            node.minmax_value = value
+            return value
+
+
+# Run Agent
+def run_agent(agent, environment, start_node):
+    percept = environment.get_percept(start_node)
+    agent.act(percept, environment)
+
+
+# Tree Construction
+root = Node('A')
+
+n1 = Node('B')
+n2 = Node('C')
+root.children = [n1, n2]
+
+n3 = Node('D')
+n4 = Node('E')
+n5 = Node('F')
+n6 = Node('G')
+
+n1.children = [n3, n4]
+n2.children = [n5, n6]
+
+n7 = Node(2)
+n8 = Node(3)
+n9 = Node(5)
+n10 = Node(9)
+
+n3.children = [n7, n8]
+n4.children = [n9, n10]
+
+n11 = Node(0)
+n12 = Node(1)
+n13 = Node(7)
+n14 = Node(5)
+
+n5.children = [n11, n12]
+n6.children = [n13, n14]
+
+
+# Define Depth
+depth = 3
+
+# Create Agent and Environment
+agent = MinimaxAgent(depth)
+environment = Environment(root)
+
+# Run
+run_agent(agent, environment, root)
+
+# Output
+print("\nComputed Nodes:", environment.computed_nodes)
+
+print("\nMinimax Values:")
+print("A:", root.minmax_value)
+print("B:", n1.minmax_value)
+print("C:", n2.minmax_value)
+print("D:", n3.minmax_value)
+print("E:", n4.minmax_value)
+print("F:", n5.minmax_value)
+print("G:", n6.minmax_value)
+
+#yask3
+import math
+
+
+def alpha_beta(node, depth, alpha, beta, maximizing):
+    
+    # Leaf node
+    if depth == 0 or isinstance(node, int):
+        return node
+
+    # MAX player
+    if maximizing:
+        value = -math.inf
+
+        # Sort descending for maximum pruning
+        node = sorted(node, reverse=True)
+
+        for child in node:
+            value = max(
+                value,
+                alpha_beta(child, depth - 1, alpha, beta, False)
+            )
+
+            alpha = max(alpha, value)
+
+            if beta <= alpha:
+                print("Pruned at MAX")
+                break
+
+        return value
+
+    # MIN player
+    else:
+        value = math.inf
+
+        # Sort ascending for maximum pruning
+        node = sorted(node)
+
+        for child in node:
+            value = min(
+                value,
+                alpha_beta(child, depth - 1, alpha, beta, True)
+            )
+
+            beta = min(beta, value)
+
+            if beta <= alpha:
+                print("Pruned at MIN")
+                break
+
+        return value
+
+
+def Alpha_Beta_Defense(tree):
+
+    # Dynamically sort main attack branches
+    # Best ordering for pruning
+    sorted_tree = sorted(
+        tree,
+        key=lambda branch: max(branch),
+        reverse=True
+    )
+
+    result = alpha_beta(
+        sorted_tree,
+        2,
+        -math.inf,
+        math.inf,
+        True
+    )
+
+    return result
+
+
+# Example
+tree = [
+    [10, 5, 2],
+    [8, 4, 3],
+    [20, 15, 9]
+]
+
+print("Optimal Defense Score:", Alpha_Beta_Defense(tree))
+
+#task4
+import math
+
+
+board = [' ' for _ in range(9)]
+
+
+def print_board():
+    for i in range(0, 9, 3):
+        print(board[i], "|", board[i+1], "|", board[i+2])
+
+
+def is_winner(player):
+    win_positions = [
+        [0,1,2],
+        [3,4,5],
+        [6,7,8],
+        [0,3,6],
+        [1,4,7],
+        [2,5,8],
+        [0,4,8],
+        [2,4,6]
+    ]
+
+    for pos in win_positions:
+        if all(board[i] == player for i in pos):
+            return True
+
+    return False
+
+
+def is_draw():
+    return ' ' not in board
+
+
+def minimax(depth, alpha, beta, maximizing):
+
+    if is_winner('O'):
+        return 1
+
+    if is_winner('X'):
+        return -1
+
+    if is_draw():
+        return 0
+
+    if maximizing:
+        best = -math.inf
+
+        for i in range(9):
+            if board[i] == ' ':
+                board[i] = 'O'
+                score = minimax(depth + 1, alpha, beta, False)
+                board[i] = ' '
+
+                best = max(best, score)
+                alpha = max(alpha, best)
+
+                if beta <= alpha:
+                    break
+
+        return best
+
+    else:
+        best = math.inf
+
+        for i in range(9):
+            if board[i] == ' ':
+                board[i] = 'X'
+                score = minimax(depth + 1, alpha, beta, True)
+                board[i] = ' '
+
+                best = min(best, score)
+                beta = min(beta, best)
+
+                if beta <= alpha:
+                    break
+
+        return best
+
+
+def best_move():
+    best_score = -math.inf
+    move = -1
+
+    for i in range(9):
+        if board[i] == ' ':
+            board[i] = 'O'
+            score = minimax(0, -math.inf, math.inf, False)
+            board[i] = ' '
+
+            if score > best_score:
+                best_score = score
+                move = i
+
+    return move
+
+
+def play_game():
+
+    while True:
+        print_board()
+
+        player_move = int(input("Enter position (0-8): "))
+
+        if board[player_move] == ' ':
+            board[player_move] = 'X'
+        else:
+            print("Invalid move")
+            continue
+
+        if is_winner('X'):
+            print_board()
+            print("You win!")
+            break
+
+        if is_draw():
+            print_board()
+            print("Draw!")
+            break
+
+        ai_move = best_move()
+        board[ai_move] = 'O'
+
+        print("AI played:", ai_move)
+
+        if is_winner('O'):
+            print_board()
+            print("AI wins!")
+            break
+
+        if is_draw():
+            print_board()
+            print("Draw!")
+            break
+
+
+play_game()
+
+#Burglary Alarm Problem (Bayesian Network)
+from pgmpy.models import DiscreteBayesianNetwork
+from pgmpy.factors.discrete import TabularCPD
+from pgmpy.inference import VariableElimination
+
+
+# Step 1: Define Bayesian Network Structure
+model = DiscreteBayesianNetwork([
+    ('Burglary', 'Alarm'),
+    ('Earthquake', 'Alarm'),
+    ('Alarm', 'JohnCalls'),
+    ('Alarm', 'MaryCalls')
+])
+
+
+# Step 2: Define CPTs
+
+# Burglary
+cpd_burglary = TabularCPD(
+    variable='Burglary',
+    variable_card=2,
+    values=[[0.999], [0.001]]
+)
+
+# Earthquake
+cpd_earthquake = TabularCPD(
+    variable='Earthquake',
+    variable_card=2,
+    values=[[0.998], [0.002]]
+)
+
+# Alarm | Burglary, Earthquake
+cpd_alarm = TabularCPD(
+    variable='Alarm',
+    variable_card=2,
+    values=[
+        [0.999, 0.71, 0.06, 0.05],
+        [0.001, 0.29, 0.94, 0.95]
+    ],
+    evidence=['Burglary', 'Earthquake'],
+    evidence_card=[2, 2]
+)
+
+# JohnCalls | Alarm
+cpd_john = TabularCPD(
+    variable='JohnCalls',
+    variable_card=2,
+    values=[
+        [0.3, 0.9],
+        [0.7, 0.1]
+    ],
+    evidence=['Alarm'],
+    evidence_card=[2]
+)
+
+# MaryCalls | Alarm
+cpd_mary = TabularCPD(
+    variable='MaryCalls',
+    variable_card=2,
+    values=[
+        [0.2, 0.99],
+        [0.8, 0.01]
+    ],
+    evidence=['Alarm'],
+    evidence_card=[2]
+)
+
+
+# Add CPDs
+model.add_cpds(
+    cpd_burglary,
+    cpd_earthquake,
+    cpd_alarm,
+    cpd_john,
+    cpd_mary
+)
+
+# Verify Model
+assert model.check_model()
+
+# Inference
+inference = VariableElimination(model)
+
+result = inference.query(
+    variables=['Burglary'],
+    evidence={
+        'JohnCalls': 1,
+        'MaryCalls': 1
+    }
+)
+
+print(result)
+
+#Basic Markov Model (Marble Problem)
+import numpy as np
+
+
+states = ["Red", "Blue"]
+
+transition_matrix = np.array([
+    [0.5, 0.5],
+    [0.5, 0.5]
+])
+
+
+def simulate_markov_process(initial_state, num_steps):
+    current_state = initial_state
+    state_sequence = [current_state]
+
+    for _ in range(num_steps):
+
+        if current_state == "Red":
+            next_state = np.random.choice(
+                states,
+                p=transition_matrix[0]
+            )
+        else:
+            next_state = np.random.choice(
+                states,
+                p=transition_matrix[1]
+            )
+
+        state_sequence.append(next_state)
+        current_state = next_state
+
+    return state_sequence
+
+
+initial_state = "Red"
+num_steps = 10
+
+sequence = simulate_markov_process(
+    initial_state,
+    num_steps
+)
+
+print(" -> ".join(sequence))
+
+#Student Exam Bayesian Network
+from pgmpy.models import DiscreteBayesianNetwork
+from pgmpy.factors.discrete import TabularCPD
+from pgmpy.inference import VariableElimination
+
+
+model = DiscreteBayesianNetwork([
+    ('Intelligence', 'Grade'),
+    ('StudyHours', 'Grade'),
+    ('Difficulty', 'Grade'),
+    ('Grade', 'Pass')
+])
+
+
+cpd_intelligence = TabularCPD(
+    variable='Intelligence',
+    variable_card=2,
+    values=[[0.7], [0.3]]
+)
+
+cpd_study = TabularCPD(
+    variable='StudyHours',
+    variable_card=2,
+    values=[[0.6], [0.4]]
+)
+
+cpd_difficulty = TabularCPD(
+    variable='Difficulty',
+    variable_card=2,
+    values=[[0.4], [0.6]]
+)
+
+cpd_grade = TabularCPD(
+    variable='Grade',
+    variable_card=3,
+    values=[
+        [0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1],
+        [0.15,0.2,0.25,0.3,0.35,0.4,0.5,0.6],
+        [0.05,0.1,0.15,0.2,0.25,0.3,0.3,0.3]
+    ],
+    evidence=['Intelligence', 'StudyHours', 'Difficulty'],
+    evidence_card=[2,2,2]
+)
+
+cpd_pass = TabularCPD(
+    variable='Pass',
+    variable_card=2,
+    values=[
+        [0.05,0.20,0.50],
+        [0.95,0.80,0.50]
+    ],
+    evidence=['Grade'],
+    evidence_card=[3]
+)
+
+model.add_cpds(
+    cpd_intelligence,
+    cpd_study,
+    cpd_difficulty,
+    cpd_grade,
+    cpd_pass
+)
+
+assert model.check_model()
+
+inference = VariableElimination(model)
+
+result1 = inference.query(
+    variables=['Pass'],
+    evidence={
+        'StudyHours': 0,
+        'Difficulty': 0
+    }
+)
+
+result2 = inference.query(
+    variables=['Intelligence'],
+    evidence={
+        'Pass': 1
+    }
+)
+
+print(result1)
+print(result2)
+
+#Disease Prediction Bayesian Network
+from pgmpy.models import DiscreteBayesianNetwork
+from pgmpy.factors.discrete import TabularCPD
+from pgmpy.inference import VariableElimination
+
+
+model = DiscreteBayesianNetwork([
+    ('Disease', 'Fever'),
+    ('Disease', 'Cough'),
+    ('Disease', 'Fatigue'),
+    ('Disease', 'Chills')
+])
+
+
+cpd_disease = TabularCPD(
+    variable='Disease',
+    variable_card=2,
+    values=[[0.3], [0.7]]
+)
+
+cpd_fever = TabularCPD(
+    variable='Fever',
+    variable_card=2,
+    values=[
+        [0.1, 0.5],
+        [0.9, 0.5]
+    ],
+    evidence=['Disease'],
+    evidence_card=[2]
+)
+
+cpd_cough = TabularCPD(
+    variable='Cough',
+    variable_card=2,
+    values=[
+        [0.2, 0.4],
+        [0.8, 0.6]
+    ],
+    evidence=['Disease'],
+    evidence_card=[2]
+)
+
+cpd_fatigue = TabularCPD(
+    variable='Fatigue',
+    variable_card=2,
+    values=[
+        [0.3, 0.7],
+        [0.7, 0.3]
+    ],
+    evidence=['Disease'],
+    evidence_card=[2]
+)
+
+cpd_chills = TabularCPD(
+    variable='Chills',
+    variable_card=2,
+    values=[
+        [0.4, 0.6],
+        [0.6, 0.4]
+    ],
+    evidence=['Disease'],
+    evidence_card=[2]
+)
+
+model.add_cpds(
+    cpd_disease,
+    cpd_fever,
+    cpd_cough,
+    cpd_fatigue,
+    cpd_chills
+)
+
+assert model.check_model()
+
+inference = VariableElimination(model)
+
+# Task 1
+result1 = inference.query(
+    variables=['Disease'],
+    evidence={
+        'Fever': 1,
+        'Cough': 1
+    }
+)
+
+# Task 2
+result2 = inference.query(
+    variables=['Disease'],
+    evidence={
+        'Fever': 1,
+        'Cough': 1,
+        'Chills': 1
+    }
+)
+
+# Task 3
+result3 = inference.query(
+    variables=['Fatigue'],
+    evidence={
+        'Disease': 0
+    }
+)
+
+print(result1)
+print(result2)
+print(result3)
+
+#Weather Markov Model
+import numpy as np
+
+
+states = ["Sunny", "Cloudy", "Rainy"]
+
+transition_matrix = np.array([
+    [0.6, 0.3, 0.1],  
+    [0.3, 0.4, 0.3],  
+    [0.2, 0.3, 0.5]   
+])
+
+
+def simulate_weather(initial_state, days):
+    current_state = initial_state
+    weather_sequence = [current_state]
+
+    for _ in range(days - 1):
+
+        index = states.index(current_state)
+
+        next_state = np.random.choice(
+            states,
+            p=transition_matrix[index]
+        )
+
+        weather_sequence.append(next_state)
+        current_state = next_state
+
+    return weather_sequence
+
+
+days = 10
+
+weather = simulate_weather("Sunny", days)
+
+rainy_days = weather.count("Rainy")
+
+print("Weather Sequence:")
+print(" -> ".join(weather))
+
+print("Rainy Days:", rainy_days)
+
+if rainy_days >= 3:
+    print("At least 3 rainy days: Yes")
+else:
+    print("At least 3 rainy days: No")
+
+#Task 1 — Commute Late Bayesian Network
+from pgmpy.models import DiscreteBayesianNetwork
+from pgmpy.factors.discrete import TabularCPD
+from pgmpy.inference import VariableElimination
+
+
+# Create network
+model = DiscreteBayesianNetwork([
+    ('Weather', 'Traffic'),
+    ('Accident', 'Traffic'),
+    ('Roadwork', 'Traffic'),
+    ('Traffic', 'Late')
+])
+
+
+# Prior probabilities
+
+# Weather
+# 0 = Clear
+# 1 = Rainy
+cpd_weather = TabularCPD(
+    variable='Weather',
+    variable_card=2,
+    values=[
+        [0.8],
+        [0.2]
+    ]
+)
+
+# Accident
+# 0 = No
+# 1 = Yes
+cpd_accident = TabularCPD(
+    variable='Accident',
+    variable_card=2,
+    values=[
+        [0.9],
+        [0.1]
+    ]
+)
+
+# Roadwork
+# 0 = Inactive
+# 1 = Active
+cpd_roadwork = TabularCPD(
+    variable='Roadwork',
+    variable_card=2,
+    values=[
+        [0.7],
+        [0.3]
+    ]
+)
+
+
+# Traffic
+# 0 = Light
+# 1 = Moderate
+# 2 = Heavy
+
+cpd_traffic = TabularCPD(
+    variable='Traffic',
+    variable_card=3,
+    values=[
+        # Light
+        [0.8, 0.4, 0.3, 0.1, 0.4, 0.2, 0.1, 0.05],
+
+        # Moderate
+        [0.15, 0.4, 0.4, 0.3, 0.4, 0.4, 0.3, 0.25],
+
+        # Heavy
+        [0.05, 0.2, 0.3, 0.6, 0.2, 0.4, 0.6, 0.7]
+    ],
+    evidence=['Weather', 'Accident', 'Roadwork'],
+    evidence_card=[2, 2, 2]
+)
+
+
+# Late
+# 0 = No
+# 1 = Yes
+
+cpd_late = TabularCPD(
+    variable='Late',
+    variable_card=2,
+    values=[
+        [0.95, 0.40, 0.15],  
+        [0.05, 0.60, 0.85]   
+    ],
+    evidence=['Traffic'],
+    evidence_card=[3]
+)
+
+
+# Add CPDs
+model.add_cpds(
+    cpd_weather,
+    cpd_accident,
+    cpd_roadwork,
+    cpd_traffic,
+    cpd_late
+)
+
+assert model.check_model()
+
+# Inference
+inference = VariableElimination(model)
+
+# Task 1:
+# P(Late | Rain, Roadwork)
+
+result1 = inference.query(
+    variables=['Late'],
+    evidence={
+        'Weather': 1,
+        'Roadwork': 1
+    }
+)
+
+print("P(Late | Rain, Roadwork)")
+print(result1)
+
+
+# Task 2:
+# P(Accident | Late)
+
+result2 = inference.query(
+    variables=['Accident'],
+    evidence={
+        'Late': 1
+    }
+)
+
+print("\nP(Accident | Late)")
+print(result2)
+
+#Task 2 — Fraud Detection Bayesian Network
+from pgmpy.models import DiscreteBayesianNetwork
+from pgmpy.factors.discrete import TabularCPD
+from pgmpy.inference import VariableElimination
+
+
+model = DiscreteBayesianNetwork([
+    ('TransactionType', 'HighValueOrder'),
+    ('TransactionType', 'RapidTransactions'),
+    ('TransactionType', 'IPMismatch'),
+    ('TransactionType', 'FailedLogins')
+])
+
+
+# Transaction Type
+# 0 = Fraud
+# 1 = Legit
+
+cpd_transaction = TabularCPD(
+    variable='TransactionType',
+    variable_card=2,
+    values=[
+        [0.05],
+        [0.95]
+    ]
+)
+
+
+# HighValueOrder
+cpd_highvalue = TabularCPD(
+    variable='HighValueOrder',
+    variable_card=2,
+    values=[
+        [0.2, 0.8],
+        [0.8, 0.2]
+    ],
+    evidence=['TransactionType'],
+    evidence_card=[2]
+)
+
+
+# RapidTransactions
+cpd_rapid = TabularCPD(
+    variable='RapidTransactions',
+    variable_card=2,
+    values=[
+        [0.3, 0.9],
+        [0.7, 0.1]
+    ],
+    evidence=['TransactionType'],
+    evidence_card=[2]
+)
+
+
+# IPMismatch
+cpd_ip = TabularCPD(
+    variable='IPMismatch',
+    variable_card=2,
+    values=[
+        [0.1, 0.95],
+        [0.9, 0.05]
+    ],
+    evidence=['TransactionType'],
+    evidence_card=[2]
+)
+
+
+# FailedLogins
+cpd_failed = TabularCPD(
+    variable='FailedLogins',
+    variable_card=2,
+    values=[
+        [0.4, 0.85],
+        [0.6, 0.15]
+    ],
+    evidence=['TransactionType'],
+    evidence_card=[2]
+)
+
+
+model.add_cpds(
+    cpd_transaction,
+    cpd_highvalue,
+    cpd_rapid,
+    cpd_ip,
+    cpd_failed
+)
+
+assert model.check_model()
+
+inference = VariableElimination(model)
+
+
+# Task 1
+# P(TransactionType | HighValueOrder, RapidTransactions)
+
+result1 = inference.query(
+    variables=['TransactionType'],
+    evidence={
+        'HighValueOrder': 1,
+        'RapidTransactions': 1
+    }
+)
+
+print("Task 1")
+print(result1)
+
+
+# Task 2
+# Add IPMismatch
+
+result2 = inference.query(
+    variables=['TransactionType'],
+    evidence={
+        'HighValueOrder': 1,
+        'RapidTransactions': 1,
+        'IPMismatch': 1
+    }
+)
+
+print("\nTask 2")
+print(result2)
+
+
+# Task 3
+# P(FailedLogins | Fraud)
+
+result3 = inference.query(
+    variables=['FailedLogins'],
+    evidence={
+        'TransactionType': 0
+    }
+)
+
+print("\nTask 3")
+print(result3)
+
+#Markov Model (Stealth Guard AI)
+import numpy as np
+
+
+states = ["Patrol", "Chase", "Search"]
+
+
+# Transition matrix
+transition_matrix = np.array([
+    # Patrol
+    [0.8, 0.2, 0.0],
+
+    # Chase
+    [0.2, 0.6, 0.2],
+
+    # Search
+    [0.3, 0.3, 0.4]
+])
+
+
+def simulate_guard(initial_state, steps):
+    current_state = initial_state
+    sequence = [current_state]
+
+    for _ in range(steps):
+
+        index = states.index(current_state)
+
+        next_state = np.random.choice(
+            states,
+            p=transition_matrix[index]
+        )
+
+        sequence.append(next_state)
+
+        current_state = next_state
+
+    return sequence
+
+
+# Simulate
+steps = 20
+
+sequence = simulate_guard("Patrol", steps)
+
+print("Guard State Sequence:")
+print(" -> ".join(sequence))
+
+
+# Count Chase states
+chase_count = sequence.count("Chase")
+
+print("\nTotal Chase States:", chase_count)
+
+if chase_count >= 5:
+    print("Guard entered Chase at least 5 times")
+else:
+    print("Guard entered Chase less than 5 times")
+
+#Support Vector Machine (SVM)
+from sklearn import datasets
+from sklearn.svm import SVC
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+
+
+# Load dataset
+iris = datasets.load_iris()
+
+X = iris.data
+y = iris.target
+
+# Convert into binary classification
+y = (y == 0).astype(int)
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.3,
+    random_state=42
+)
+
+# Train SVM
+svm = SVC(
+    kernel='rbf',
+    C=1,
+    gamma='scale'
+)
+
+svm.fit(X_train, y_train)
+
+# Predict
+y_pred = svm.predict(X_test)
+
+# Accuracy
+print("SVM Accuracy:", accuracy_score(y_test, y_pred))
+
+#Linear Regression
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+
+
+# Sample data
+x = np.array([
+    [1000],
+    [1500],
+    [2000],
+    [2500],
+    [3000]
+])
+
+y = np.array([
+    200000,
+    250000,
+    300000,
+    350000,
+    400000
+])
+
+# Split data
+x_train, x_test, y_train, y_test = train_test_split(
+    x,
+    y,
+    test_size=0.2,
+    random_state=42
+)
+
+# Train model
+LR = LinearRegression()
+
+ModelLR = LR.fit(
+    x_train,
+    y_train
+)
+
+# Predict
+PredictionLR = ModelLR.predict(x_test)
+
+print("Predictions:", PredictionLR)
+
+#near Regression Accuracy (R²)
+from sklearn.metrics import r2_score
+
+
+print("===================LR Testing Accuracy================")
+
+teachLR = r2_score(
+    y_test,
+    PredictionLR
+)
+
+testingAccLR = teachLR * 100
+
+print(testingAccLR)
+
+#Decision Tree Classifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
+
+
+# Decision Tree
+DT = DecisionTreeClassifier()
+
+# Train
+ModelDT = DT.fit(
+    x_train,
+    y_train
+)
+
+# Predict
+PredictionDT = DT.predict(x_test)
+
+print("Predictions:", PredictionDT)
+
+# Training accuracy
+print("====================DT Training Accuracy===============")
+
+tracDT = DT.score(
+    x_train,
+    y_train
+)
+
+TrainingAccDT = tracDT * 100
+
+print(f"Training Accuracy: {TrainingAccDT:.2f}%")
+
+# Testing accuracy
+print("=====================DT Testing Accuracy=================")
+
+teacDT = accuracy_score(
+    y_test,
+    PredictionDT
+)
+
+testingAccDT = teacDT * 100
+
+print(f"Testing Accuracy: {testingAccDT:.2f}%")
+
+#LAB TASK 1 — House Price Prediction (Regression)
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+
+
+# Sample dataset
+data = {
+    'SquareFootage': [1200, 1500, 1800, 2000, 2500],
+    'Bedrooms': [2, 3, 3, 4, 4],
+    'Bathrooms': [1, 2, 2, 3, 3],
+    'Age': [10, 5, 7, 3, 2],
+    'Neighborhood': ['A', 'B', 'A', 'C', 'B'],
+    'Price': [200000, 250000, 280000, 350000, 400000]
+}
+
+df = pd.DataFrame(data)
+
+# Handle missing values
+df.fillna(df.mean(numeric_only=True), inplace=True)
+
+# Encode categorical data
+encoder = LabelEncoder()
+df['Neighborhood'] = encoder.fit_transform(df['Neighborhood'])
+
+# Features
+X = df.drop('Price', axis=1)
+
+# Target
+y = df['Price']
+
+# Split
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42
+)
+
+# Train
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# Predict
+predictions = model.predict(X_test)
+
+# Evaluate
+mse = mean_squared_error(y_test, predictions)
+r2 = r2_score(y_test, predictions)
+
+print("MSE:", mse)
+print("R2 Score:", r2)
+
+# New prediction
+new_house = [[2200, 3, 2, 4, 1]]
+
+predicted_price = model.predict(new_house)
+
+print("Predicted Price:", predicted_price)
+
+#LAB TASK 2 — Spam Email Classification
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import accuracy_score
+
+
+# Sample emails
+emails = [
+    "Win money now",
+    "Meeting tomorrow",
+    "Claim your prize",
+    "Project deadline",
+    "Free cash now",
+    "Team discussion"
+]
+
+labels = [1, 0, 1, 0, 1, 0]
+
+
+# Convert text into numbers
+vectorizer = CountVectorizer()
+
+X = vectorizer.fit_transform(emails)
+
+y = labels
+
+# Split
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42
+)
+
+# Train
+model = MultinomialNB()
+
+model.fit(
+    X_train,
+    y_train
+)
+
+# Predict
+predictions = model.predict(X_test)
+
+# Accuracy
+accuracy = accuracy_score(
+    y_test,
+    predictions
+)
+
+print("Accuracy:", accuracy)
+
+# New email classification
+new_email = ["Free money available now"]
+
+new_email_vector = vectorizer.transform(new_email)
+
+prediction = model.predict(new_email_vector)
+
+print("Spam Prediction:", prediction)
+
+#LAB TASK 3 — Customer Classification (High-value / Low-value)
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+
+
+# Dataset
+data = {
+    'Spending': [5000, 2000, 7000, 1500, 8000],
+    'Age': [30, 45, 28, 50, 35],
+    'Visits': [20, 5, 25, 4, 30],
+    'Frequency': [10, 2, 12, 1, 15],
+    'Value': [1, 0, 1, 0, 1]
+}
+
+df = pd.DataFrame(data)
+
+# Features
+X = df.drop('Value', axis=1)
+
+# Target
+y = df['Value']
+
+# Split
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42
+)
+
+# Scale
+scaler = StandardScaler()
+
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Train SVM
+model = SVC(kernel='linear')
+
+model.fit(
+    X_train,
+    y_train
+)
+
+# Predict
+predictions = model.predict(X_test)
+
+# Accuracy
+accuracy = accuracy_score(
+    y_test,
+    predictions
+)
+
+print("Accuracy:", accuracy)
+
+# Classify new customer
+new_customer = [[6000, 32, 18, 9]]
+
+new_customer_scaled = scaler.transform(new_customer)
+
+result = model.predict(new_customer_scaled)
+
+print("Customer Category:", result)
+
+#K-Means Clustering (Manual Example – Mall Customers)
+# Import libraries
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+
+# Load dataset
+df = pd.read_csv("Mall_Customers.csv")
+
+print(df.head())
+
+# Selecting Annual Income and Spending Score
+X = df.iloc[:, [3, 4]].values
+
+# Elbow Method
+wcss = []
+
+for i in range(1, 11):
+    kmeans = KMeans(
+        n_clusters=i,
+        init='k-means++',
+        random_state=42
+    )
+    kmeans.fit(X)
+    wcss.append(kmeans.inertia_)
+
+# Plot elbow graph
+plt.plot(range(1, 11), wcss)
+plt.title("Elbow Method")
+plt.xlabel("Number of Clusters")
+plt.ylabel("WCSS")
+plt.show()
+
+# Feature Scaling
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Train KMeans
+kmeans = KMeans(
+    n_clusters=5,
+    init='k-means++',
+    random_state=42
+)
+
+y_pred = kmeans.fit_predict(X_scaled)
+
+# Visualizing clusters
+plt.scatter(X[y_pred == 0, 0], X[y_pred == 0, 1], label="Cluster 1")
+plt.scatter(X[y_pred == 1, 0], X[y_pred == 1, 1], label="Cluster 2")
+plt.scatter(X[y_pred == 2, 0], X[y_pred == 2, 1], label="Cluster 3")
+plt.scatter(X[y_pred == 3, 0], X[y_pred == 3, 1], label="Cluster 4")
+plt.scatter(X[y_pred == 4, 0], X[y_pred == 4, 1], label="Cluster 5")
+
+# Centroids
+plt.scatter(
+    kmeans.cluster_centers_[:, 0],
+    kmeans.cluster_centers_[:, 1],
+    s=300,
+    marker='X',
+    label="Centroids"
+)
+
+plt.title("Customer Segments")
+plt.xlabel("Annual Income")
+plt.ylabel("Spending Score")
+plt.legend()
+plt.show()
+
+#Task 2 — task2_vehicle_clustering.py
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+
+# ==============================
+# TASK 2: Vehicle Clustering
+# ==============================
+
+# Create dataset
+data = {
+    'vehicle_serial_no': [5, 3, 8, 2, 4, 7, 6, 10, 1, 9],
+    'mileage': [150000, 120000, 250000, 80000, 100000,
+                220000, 180000, 300000, 75000, 280000],
+    'fuel_efficiency': [15, 18, 10, 22, 20,
+                        12, 16, 8, 24, 9],
+    'maintenance_cost': [5000, 4000, 7000, 2000, 3000,
+                         6500, 5500, 8000, 1500, 7500],
+    'vehicle_type': ['SUV', 'Sedan', 'Truck', 'Hatchback',
+                     'Sedan', 'Truck', 'SUV', 'Truck',
+                     'Hatchback', 'SUV']
+}
+
+# Create DataFrame
+df = pd.DataFrame(data)
+
+print("Original Dataset:\n")
+print(df)
+
+# Encode categorical feature
+encoder = LabelEncoder()
+df['vehicle_type'] = encoder.fit_transform(df['vehicle_type'])
+
+print("\nEncoded Dataset:\n")
+print(df)
+
+# Remove serial number
+X = df.drop('vehicle_serial_no', axis=1)
+
+# ==================================
+# K-Means WITHOUT Scaling
+# ==================================
+kmeans_no_scaling = KMeans(
+    n_clusters=3,
+    random_state=42
+)
+
+df['Cluster_Without_Scaling'] = kmeans_no_scaling.fit_predict(X)
+
+print("\nClusters Without Scaling:\n")
+print(df)
+
+# ==================================
+# K-Means WITH Scaling
+# ==================================
+X_scaled = X.copy()
+
+scaler = StandardScaler()
+
+# Scale only numeric columns
+numeric_columns = ['mileage', 'fuel_efficiency', 'maintenance_cost']
+
+X_scaled[numeric_columns] = scaler.fit_transform(
+    X_scaled[numeric_columns]
+)
+
+kmeans_scaled = KMeans(
+    n_clusters=3,
+    random_state=42
+)
+
+df['Cluster_With_Scaling'] = kmeans_scaled.fit_predict(X_scaled)
+
+print("\nClusters With Scaling:\n")
+print(df)
+
+# Compare clusters
+print("\nCluster Comparison:\n")
+print(df[['vehicle_serial_no',
+          'Cluster_Without_Scaling',
+          'Cluster_With_Scaling']])
+
+# Plot comparison
+plt.figure(figsize=(8, 6))
+
+plt.scatter(
+    df['mileage'],
+    df['maintenance_cost'],
+    c=df['Cluster_With_Scaling']
+)
+
+plt.xlabel("Mileage")
+plt.ylabel("Maintenance Cost")
+plt.title("Vehicle Clustering (Scaled)")
+plt.show()
+
+Task 3 — task3_student_clustering.py
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+
+# ==============================
+# TASK 3: Student Clustering
+# ==============================
+
+# Create dataset
+student_data = {
+    'student_id': [101,102,103,104,105,106,107,108,109,110],
+    'GPA': [3.5,2.8,3.9,2.1,3.2,3.7,2.5,3.8,2.9,3.0],
+    'study_hours': [15,8,20,5,12,18,7,22,9,10],
+    'attendance_rate': [90,70,95,60,85,92,65,97,75,80]
+}
+
+# Create DataFrame
+df = pd.DataFrame(student_data)
+
+print("Student Dataset:\n")
+print(df)
+
+# Select features
+X = df[['GPA', 'study_hours', 'attendance_rate']]
+
+# Scale features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# ==============================
+# Elbow Method
+# ==============================
+wcss = []
+
+for i in range(2, 7):
+    kmeans = KMeans(
+        n_clusters=i,
+        random_state=42
+    )
+
+    kmeans.fit(X_scaled)
+
+    wcss.append(kmeans.inertia_)
+
+# Plot elbow graph
+plt.plot(range(2, 7), wcss, marker='o')
+plt.xlabel("Number of Clusters")
+plt.ylabel("WCSS")
+plt.title("Elbow Method")
+plt.show()
+
+# ==============================
+# Final Clustering
+# ==============================
+optimal_k = 3
+
+kmeans = KMeans(
+    n_clusters=optimal_k,
+    random_state=42
+)
+
+df['Cluster'] = kmeans.fit_predict(X_scaled)
+
+# Print final result
+print("\nFinal Clustered Dataset:\n")
+print(df)
+
+# Show only student ID and cluster
+print("\nStudent IDs with Assigned Clusters:\n")
+print(df[['student_id', 'Cluster']])
+
+# ==============================
+# Visualization
+# ==============================
+plt.figure(figsize=(8, 6))
+
+plt.scatter(
+    df['study_hours'],
+    df['GPA'],
+    c=df['Cluster']
+)
+
+plt.xlabel("Study Hours")
+plt.ylabel("GPA")
+plt.title("Student Clustering")
+
+plt.show()
+
+
+#utility_bfs
+import heapq
+
+class UtilityEnvironment:
+    def __init__(self):
+        self.cost_grid = [
+            [1, 1, 5, 5],
+            [5, 1, 1, 1],
+            [5, 5, 5, 1]
+        ]
+        self.goal = (2, 3)
+
+    def get_percept(self):
+        return self.cost_grid, self.goal
+
+class UtilityAgent:
+    def __init__(self, start_pos):
+        self.pos = start_pos
+
+    def find_best_utility(self, grid, goal):
+        pq = [(0, self.pos, [self.pos])]
+        visited = {}
+
+        while pq:
+            cost, curr, path = heapq.heappop(pq)
+
+            if curr == goal:
+                return path, cost
+
+            if curr in visited and visited[curr] <= cost:
+                continue
+            visited[curr] = cost
+
+            y, x = curr
+            for dy, dx in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                ny, nx = y + dy, x + dx
+                if 0 <= ny < len(grid) and 0 <= nx < len(grid[0]):
+                    new_cost = cost + grid[ny][nx]
+                    heapq.heappush(pq, (new_cost, (ny, nx), path + [(ny, nx)]))
+        return None
+
+u_env = UtilityEnvironment()
+grid, goal = u_env.get_percept()
+u_agent = UtilityAgent((0, 0))
+path, total_cost = u_agent.find_best_utility(grid, goal)
+print(f"Utility Agent Best Path: {path} | Total Cost: {total_cost}")
+
+#gba_bfs
+from collections import deque
+
+class Environment:
+    def __init__(self):
+        self.grid = [
+            [0, 0, 0, 1],
+            [1, 1, 0, 1],
+            [0, 0, 0, 0]
+        ]
+        self.goal = (2, 3)
+
+    def get_percept(self):
+        return self.grid, self.goal
+
+class GoalAgent:
+    def __init__(self, start_pos):
+        self.pos = start_pos
+
+    def plan_path(self, grid, goal):
+        queue = deque([(self.pos, [self.pos])])
+        visited = {self.pos}
+        
+        while queue:
+            (curr_y, curr_x), path = queue.popleft()
+            
+            if (curr_y, curr_x) == goal:
+                return path
+            
+            for dy, dx in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                ny, nx = curr_y + dy, curr_x + dx
+                if 0 <= ny < len(grid) and 0 <= nx < len(grid[0]) and grid[ny][nx] == 0:
+                    if (ny, nx) not in visited:
+                        visited.add((ny, nx))
+                        queue.append(((ny, nx), path + [(ny, nx)]))
+        return None
+
+env = Environment()
+grid, goal = env.get_percept()
+agent = GoalAgent((0, 0))
+print(f"Goal Agent Path: {agent.plan_path(grid, goal)}")
+
+#bfs 
+from collections import deque
+
+def bfs(tree, start, goal):
+    visited = set()
+    queue = deque([(start, [start])])
+    visited.add(start)
+
+    while queue:
+        (node, path) = queue.popleft()
+        
+        if node == goal:
+            return path
+
+        for neighbor in tree.get(node, []):
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append((neighbor, path + [neighbor]))
+                
+    return None
+
+#Learning Agent
+import random
+class LearningAgent:
+    def __init__(self):
+        self.performance_standard = 22
+        self.knowledge = {}
+        
+    def act(self, current_temp):
+        if current_temp in self.knowledge:
+            return self.knowledge[current_temp]
+        return random.choice(["Heat", "Cool"])
+
+    def learn(self, state, action, result_temp):
+        if abs(result_temp - self.performance_standard) < 2:
+            self.knowledge[state] = action
+            print(f"Learned: At {state}, {action} is good.")
+
+# Usage
+agent = LearningAgent()
+action = agent.act(18)
+agent.learn(18, "Heat", 21) # Critic says this was a good move
+print(f"Next time at 18: {agent.act(18)}") # Output: Heat
+#Utility-Based Agent
+class UtilityBasedAgent:
+    def __init__(self):
+        self.goal = "Home"
+        self.options = {
+            "Work": [("Bus", 10, 50), ("Uber", 2, 200)] # (Time, Cost)
+        }
+
+    def utility_function(self, time, cost):
+        return (time * 0.7) + (cost * 0.3)
+
+    def act(self, location):
+        choices = self.options.get(location, [])
+        best_action = None
+        best_utility = float('inf')
+
+        for name, time, cost in choices:
+            u = self.utility_function(time, cost)
+            if u < best_utility:
+                best_utility = u
+                best_action = name
+        return f"Take the {best_action}"
+
+agent = UtilityBasedAgent()
+print(f"Utility Action: {agent.act('Work')}")
+
+#Goal-Based Agent
+class GoalBasedAgent:
+    def __init__(self, goal_city):
+        self.goal = goal_city
+        self.map = {"S": ["A", "B"], "A": ["Goal"], "B": ["Goal"]}
+
+    def act(self, current_city):
+        if current_city == self.goal:
+            return "Goal Reached!"
+        
+        neighbors = self.map.get(current_city, [])
+        for neighbor in neighbors:
+            if neighbor == self.goal or "Goal" in self.map.get(neighbor, []):
+                return f"Move to {neighbor}"
+        return "Search"
+
+agent = GoalBasedAgent("Goal")
+print(f"Goal Action: {agent.act('S')}")
+
+#Model-Based Reflex Agent
+class ModelBasedAgent:
+    def __init__(self):
+        self.model = {"A": "Unknown", "B": "Unknown"} # Internal memory
+        self.rules = {"Dirty": "Suck", "Clean": "Move to other room"}
+
+    def update_model(self, location, status):
+        self.model[location] = status
+
+    def act(self, location, status):
+        self.update_model(location, status)
+        
+        if status == "Dirty":
+            return "Suck"
+        
+        other_room = "B" if location == "A" else "A"
+        if self.model[other_room] == "Clean":
+            return "Done/Idle"
+        return f"Move to {other_room}"
+
+agent = ModelBasedAgent()
+print(f"Model Action: {agent.act('A', 'Clean')}")
+
+#Simple Reflex Agent
+class SimpleReflexAgent:
+    def __init__(self):
+        self.rules = {
+            "Dirty": "Suck",
+            "Clean": "Move Left"
+        }
+
+    def act(self, percept):
+        state = percept
+        action = self.rules.get(state, "Idle")
+        return action
+
+agent = SimpleReflexAgent()
+print(f"Reflex Action: {agent.act('Dirty')}")
+
+#hillclimb_nqueen
+import random
+
+def heuristic(state):
+    conflicts = 0
+    n = len(state)
+  
+    for i in range(n):
+        for j in range(i + 1, n):
+            if state[i] == state[j]:
+                conflicts += 1
+            elif abs(state[i] - state[j]) == abs(i - j):
+                conflicts += 1    
+    return conflicts
+
+
+def hill_climbing(n):
+    current = [random.randint(0, n-1) for _ in range(n)]
+    
+    while True:
+        current_h = heuristic(current)
+        
+        if current_h == 0:
+            return current
+        
+        neighbors = []
+
+        for col in range(n):
+            for row in range(n):
+                if row != current[col]:
+                    neighbor = current.copy()
+                    neighbor[col] = row
+                    neighbors.append(neighbor)
+
+        next_state = None
+        next_h = current_h
+        
+        for state in neighbors:
+            h = heuristic(state)
+            if h < next_h:
+                next_h = h
+                next_state = state
+        
+        if next_state is None:
+            return current
+        current = next_state
+
+n = 4
+solution = hill_climbing(n)
+
+print("Solution:", solution)
+print("Conflicts:", heuristic(solution))
+
+#hillclimb_grph
+def hill_climbing(graph, start, goal, heuristic):
+    current = start
+    path = [current]
+    
+    while True:
+        if current == goal:
+            return path
+        
+        neighbors = graph.get(current, [])
+        
+        if not neighbors:
+            return path
+        
+        best_neighbor = min(neighbors, key=lambda x: heuristic[x[0]])[0]
+        best_h = heuristic[best_neighbor]
+        
+        if best_h >= heuristic[current]:
+            return path  
+        
+        current = best_neighbor
+        path.append(current)
+
+graph = {
+    'A': [('B', 4), ('C', 3), ('D', 5)],
+    'B': [('E', 2), ('F', 1)],
+    'C': [('G', 0)],
+    'D': [('H', 7)],
+    'E': [],
+    'F': [],
+    'G': [],
+    'H': []
+}
+
+heuristic = {
+    'A': 6,
+    'B': 4,
+    'C': 3,
+    'D': 5,
+    'E': 2,
+    'F': 1,
+    'G': 0,
+    'H': 7
+}
+
+start = 'A'
+goal = 'G'
+
+result = hill_climbing(graph, start, goal, heuristic)
+print("Path:", result)
+
+#beam_search
+def beam_search(graph, start, goal, beam_width):
+    queue = [[start]]
+    
+    while queue:
+        all_candidates = []
+        
+        for path in queue:
+            node = path[-1]
+
+            if node == goal:
+                return path
+
+            for (neighbor, h_value) in graph.get(node, []):
+                new_path = list(path)
+                new_path.append(neighbor)
+                all_candidates.append((new_path, h_value))
+
+        all_candidates.sort(key=lambda x: x[1])
+        queue = [path for (path, h) in all_candidates[:beam_width]]
+    return None
+
+graph = {
+    'A': [('B', 4), ('C', 3), ('D', 5)],
+    'B': [('E', 2), ('F', 1)],
+    'C': [('G', 0)],
+    'D': [('H', 7)],
+    'E': [],
+    'F': [],
+    'G': [],
+    'H': []
+}
+
+start = 'A'
+goal = 'G'
+beam_width = 2
+
+result = beam_search(graph, start, goal, beam_width)
+print("Path:", result)
+
+#gbfs_maze
+import heapq
+
+def heuristic(a, b):
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+def greedy_bfs_maze(maze, start, goal):
+    rows, cols = len(maze), len(maze[0])
+
+    open_list = []
+    heapq.heappush(open_list, (heuristic(start, goal), start))
+
+    came_from = {}
+    visited = set()
+
+    while open_list:
+        _, current = heapq.heappop(open_list)
+
+        if current == goal:
+            path = []
+            while current in came_from:
+                path.append(current)
+                current = came_from[current]
+            path.append(start)
+            return path[::-1]
+
+        visited.add(current)
+
+        neighbors = [
+            (current[0] + 1, current[1]),
+            (current[0] - 1, current[1]),
+            (current[0], current[1] + 1),
+            (current[0], current[1] - 1)
+        ]
+
+        for r, c in neighbors:
+            if 0 <= r < rows and 0 <= c < cols and maze[r][c] == 0:
+                neighbor = (r, c)
+
+                if neighbor not in visited:
+                    heapq.heappush(open_list, (heuristic(neighbor, goal), neighbor))
+                    if neighbor not in came_from:
+                        came_from[neighbor] = current
+    return None
+
+maze = [
+    [0, 1, 0, 0, 0],
+    [0, 1, 0, 1, 0],
+    [0, 0, 0, 1, 0],
+    [1, 1, 0, 0, 0],
+    [0, 0, 0, 1, 0]
+]
+
+start = (0, 0)
+goal = (4, 4)
+path = greedy_bfs_maze(maze, start, goal)
+
+print("Path:", path)
+#gbfs_graph
+import heapq
+
+def greedy_bfs_graph(graph, start, goal, heuristic):
+    open_list = []
+    heapq.heappush(open_list, (heuristic[start], start))
+    came_from = {}
+    visited = set()
+
+    while open_list:
+        _, current = heapq.heappop(open_list)
+
+        if current == goal:
+            path = []
+            while current in came_from:
+                path.append(current)
+                current = came_from[current]
+            path.append(start)
+            return path[::-1]
+
+        visited.add(current)
+
+        for neighbor in graph[current]:
+            if neighbor not in visited:
+                heapq.heappush(open_list, (heuristic[neighbor], neighbor))
+                if neighbor not in came_from:
+                    came_from[neighbor] = current
+
+    return None
+
+graph = {
+    'A': ['B', 'C'],
+    'B': ['D', 'E'],
+    'C': ['F'],
+    'D': [],
+    'E': ['G'],
+    'F': [],
+    'G': []
+}
+
+heuristic = {
+    'A': 6, 'B': 4, 'C': 5,
+    'D': 3, 'E': 2, 'F': 4,
+    'G': 0
+}
+
+start = 'A'
+goal = 'G'
+path = greedy_bfs_graph(graph, start, goal, heuristic)
+print("Path:", path)
+
+#astar_maze
+import heapq
+
+def heuristic(a, b):
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+def astar(maze, start, goal):
+    rows, cols = len(maze), len(maze[0])
+
+    open_list = []
+    heapq.heappush(open_list, (0, start))
+
+    came_from = {}
+    g_cost = {start: 0}
+
+    while open_list:
+        _, current = heapq.heappop(open_list)
+
+        if current == goal:
+            path = []
+            while current in came_from:
+                path.append(current)
+                current = came_from[current]
+            path.append(start)
+            return path[::-1]
+        
+        neighbors = [
+            (current[0] + 1, current[1]),
+            (current[0] - 1, current[1]),
+            (current[0], current[1] + 1),
+            (current[0], current[1] - 1)
+        ]
+
+        for neighbor in neighbors:
+            r, c = neighbor
+
+            if 0 <= r < rows and 0 <= c < cols and maze[r][c] == 0:
+                tentative_g = g_cost[current] + 1
+
+                if neighbor not in g_cost or tentative_g < g_cost[neighbor]:
+                    g_cost[neighbor] = tentative_g
+                    f_cost = tentative_g + heuristic(neighbor, goal)
+
+                    heapq.heappush(open_list, (f_cost, neighbor))
+                    came_from[neighbor] = current
+
+    return None
+
+maze = [
+    [0, 1, 0, 0, 0],
+    [0, 1, 0, 1, 0],
+    [0, 0, 0, 1, 0],
+    [1, 1, 0, 0, 0],
+    [0, 0, 0, 1, 0]
+]
+
+start = (0, 0)
+goal = (4, 4)
+
+path = astar(maze, start, goal)
+
+if path:
+    print("Path found:", path)
+else:
+    print("No path found")
+
+#astar_graph
+import heapq
+
+def astar(graph, heuristic, start, goal):
+    openlist = []
+    heapq.heappush(openlist,(0,start))
+
+    cameFrom = {}
+    costSoFar = {start:0}
+
+    while openlist:
+        currentcost, currentnode = heapq.heappop(openlist)
+
+        if currentnode == goal:
+            break
+
+        for neighbor, cost in graph[currentnode]:
+            newcost = costSoFar[currentnode] + cost
+
+            if neighbor not in costSoFar or newcost < costSoFar[neighbor]:
+                costSoFar[neighbor] = newcost
+                priority = newcost + heuristic[neighbor]
+                heapq.heappush(openlist, (priority,neighbor))
+                cameFrom[neighbor] = currentnode
+
+    path = []
+    node = goal
+    if goal not in cameFrom and start != goal:
+        print("Goal not found")
+        return
+    
+    while node != start:
+        path.append(node)
+        node = cameFrom[node]
+    path.append(start)
+    path.reverse()
+
+    return path, costSoFar[goal]
+
+graph = {
+    'S': [('A', 1), ('B', 4)],
+    'A': [('C', 2)],
+    'B': [('C', 1)],
+    'C': [('G', 3)],
+    'G': []
+}
+
+heuristic = {
+    'S': 5,
+    'A': 4,
+    'B': 2,
+    'C': 1,
+    'G': 0
+}
+
+path, cost = astar(graph, heuristic, 'S', 'G')
+print("Path:", path)
+print("Cost:", cost)
+
+#genetic_algorithim
+import random
+
+n = 4
+population_size = 20
+generations = 100
+
+def fitness(chromosome):
+    # fitneess = max_pairs - attacking_pairs
+    attacking_pairs = 0
+    max_pairs = n * (n-1) // 2
+
+    for i in range(n):
+        for j in range(i+1, n):
+            if chromosome[i] == chromosome[j]:
+                attacking_pairs += 1
+            if abs(chromosome[i]-chromosome[j]) == abs(i-j):
+                attacking_pairs += 1
+    
+    return max_pairs - attacking_pairs
+
+def crateChromosone():
+    return [random.randint(0, n-1) for _ in range(n)]
+
+def createPopulation():
+    return [crateChromosone() for _ in range(population_size)]
+
+def selection(population):
+    population.sort(key=lambda x: fitness(x), reverse=True)
+    return population[:len(population)//2]
+
+def crossover(parent1, parent2):
+    n = len(parent1)
+    point = random.randint(0, n-2)
+    child = parent1[:point] + parent2[point:]
+    return child
+
+def mutation(chromosome):
+    n = len(chromosome)
+
+    if random.random() < 0.1:
+        index = random.randint(0, n-1)
+        chromosome[index] = random.randint(0, n-1)
+    return chromosome
+
+def genetic_algorithim():
+    population = createPopulation()
+    for generation in range(generations):
+        population = selection(population)
+
+        newPopulation = population.copy()
+
+        while len(newPopulation) < population_size:
+            parent1, parent2 = random.sample(population, 2)
+            child = crossover(parent1,parent2)
+            child = mutation(child)
+
+            newPopulation.append(child)
+        population = newPopulation
+
+        #check best solution
+        best = max(population, key=lambda x: fitness(x))
+
+        if fitness(best) == n*(n-1) // 2:
+            print("solution found at generation", generation)
+            print("Board:", best)
+            return best
+        
+        print("best found:", best)
+        return best
+
+genetic_algorithim()
